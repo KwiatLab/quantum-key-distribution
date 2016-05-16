@@ -94,7 +94,9 @@ def calculate_frame_occupancy(binary_string, frame_size):
         frame_occupancy[event_index/frame_size] +=1    
         
     return frame_occupancy
-   
+
+def calculate_frame_occupancy():
+    
 
 def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size=16):
     frame_numbers = timetags.copy()
