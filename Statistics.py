@@ -54,10 +54,51 @@ def probLetter(l,alph):
     return p
 
 #Assumes that the person's data is ordered
+
+def create_binary_string_from_laser_pulses(timetags, binsize = 263.15, relative_unit = 78.125):
+
+    # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
+    BINSIZE = around(binsize/relative_unit)
+    number_of_timetags = len(timetags)
+    print "Number of ttags", number_of_timetags
+    bin_string = zeros(number_of_timetags,dtype=uint64)
+
+
+    for i in range(number_of_timetags):
+        bin_number = around(timetags[i] / BINSIZE)
+        bin_string[i]+=bin_number
+
+    '''
+    NOTE: If performance is really bad try fixing code below for implementation in low-level language
+    '''
+# 
+#     code = """
+#         long long z = 0;
+#         long long bin_number = 0;
+#         for (;z<number_of_timetags;z++) {
+#             bin_number = round(timetags[z] / BINSIZE);
+#             bin_string[bin_number] +=1;
+#         }
+#     """
+#     inline(code,["BINSIZE","bin_string","timetags","number_of_timetags"],headers=["<math.h>"])
+
+    return bin_string
+
+def calculate_frame_occupancy(binary_string, frame_size):
+
+    number_of_frames = around(binary_string[-1]/frame_size)+1
+    print "Total number of frames: ", number_of_frames
+    frame_occupancy = zeros(number_of_frames,dtype=uint16)
+    
+    for event_index in binary_string:
+        frame_occupancy[event_index/frame_size] +=1    
+        
+    return frame_occupancy
+   
+
 def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size=16):
     frame_numbers = timetags.copy()
     frame_numbers /= frame_size
-
     #Get the number of time bins
     if (total_number_of_frames == None): total_number_of_frames = frame_numbers[-1]+1
 
@@ -67,7 +108,7 @@ def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size
     person_p = zeros(total_number_of_frames,dtype=uint8)
     frame_size = int(frame_size)
 
-    print(frame_numbers)
+    print("Frame numbers: ", frame_numbers)
     number_of_timetags = int(argmax(frame_numbers>total_number_of_frames))
     if (number_of_timetags==0 and frame_numbers[0] > total_number_of_frames):
         print "ERROR: TOT is smaller than minvalue!"
@@ -89,6 +130,7 @@ def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size
     """
     inline(code,["frame_occupancy","frame_location","person_p","frame_numbers","polarizations","timetags","number_of_timetags","frame_size"],headers=["<math.h>"])
 
+    # frame location counts how many occurances there are in the frame
     """
     for z in xrange(len(timetags)):
         frame_occupancy[frame_numbers[z]] += 1
@@ -242,130 +284,132 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     numpy.set_printoptions(edgeitems = 100) 
     
     
-    print("alice channels")
-    print(alice_pol)
+    # print("alice channels")
+    # print(alice_pol)
     print("alice ttags")
-    print(alice)
-    print ("bob channels")
-    print(bob_pol)
+   # print(alice)
+    # print ("bob channels")
+    # print(bob_pol)
     print("bob ttags")
-    print(bob)
+
+    binary_string_laser = create_binary_string_from_laser_pulses(alice)
+
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,4)):
+    for frame_size in 2**array(range(1,13)):
         print("DOING ALPHABET",frame_size)
-        totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
+        # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
         print("Extracting Data")
-        (alice_fo,alice_fl,alice_p,maxtag_a) = createLDPCdata(alice,alice_pol,total_number_of_frames = totlen,frame_size=frame_size)
-        (bob_fo,bob_fl,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
-        print("frame occupancy")
-        print(alice_fo)
-        print("frame location sequnces")
-        print(alice_fl)
-        print "->Extracting ideal FRAME_OCCUPANCY (1-1) and POLARIZATION arrays"
-        sys.stdout.flush()
+        print calculate_frame_occupancy(binary_string_laser, frame_size)
+        # (bob_fo,bob_fl,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
+        # print("frame occupancy NEW")
+        # print(alice_fo)
+        # print("frame location sequnces NEW")
+        # print(alice_fl)
+        # print "->Extracting ideal FRAME_OCCUPANCY (1-1) and POLARIZATION arrays"
+        # sys.stdout.flush()
         
-        #2-1,2-2,etc:
-        bigmask = logical_or(alice_fo>1,bob_fo>1)
-        bigalice = alice_fl[bigmask]
-        bigbob = bob_fl[bigmask]
-        bigalice_t = alice_fo[bigmask]
-        bigbob_t = bob_fo[bigmask]
+        # #2-1,2-2,etc:
+        # bigmask = logical_or(alice_fo>1,bob_fo>1)
+        # bigalice = alice_fl[bigmask]
+        # bigbob = bob_fl[bigmask]
+        # bigalice_t = alice_fo[bigmask]
+        # bigbob_t = bob_fo[bigmask]
 
-        multibob = resequence(bigbob,bigbob_t,frame_size)
-        multialice = resequence(bigalice,bigalice_t,frame_size)
+        # multibob = resequence(bigbob,bigbob_t,frame_size)
+        # multialice = resequence(bigalice,bigalice_t,frame_size)
 
-        #1-1,etc
+        # #1-1,etc
 
-        nb_mask = logical_and(alice_fo==1,bob_fo==1)
+        # nb_mask = logical_and(alice_fo==1,bob_fo==1)
     
-        alice_nbf = alice_fl[nb_mask]
-        bob_nbf = bob_fl[nb_mask]
+        # alice_nbf = alice_fl[nb_mask]
+        # bob_nbf = bob_fl[nb_mask]
     
-        alice_pf = alice_p[nb_mask]
-        bob_pf = bob_p[nb_mask]
-        print "DATA saved for LDPC procedure"
-        savetxt("FRAME_128_DATA.csv",(alice_nbf,bob_nbf),fmt="%i")
+        # alice_pf = alice_p[nb_mask]
+        # bob_pf = bob_p[nb_mask]
+        # print "DATA saved for LDPC procedure"
+        # savetxt("FRAME_128_DATA.csv",(alice_nbf,bob_nbf),fmt="%i")
 
-        #graphs.polarizationPlot(alice_pf,bob_pf)
+        # #graphs.polarizationPlot(alice_pf,bob_pf)
 
-        print(len(alice_nbf))
-        print(alice_nbf,bob_nbf)
+        # print(len(alice_nbf))
+        # print(alice_nbf,bob_nbf)
 
-        #Extract code statistics
+        # #Extract code statistics
 
 
-        print "->Code statistics"
-        sys.stdout.flush()
+        # print "->Code statistics"
+        # sys.stdout.flush()
     
-        print "Frame Occupancy:"
-        print "\tLength:",len(bob_fo)
-        b_co = sum(bob_fo==alice_fo)
-        b_cor = float(b_co)/len(bob_fo)
-        print "\tCoincidence:",b_co,b_cor
-        print "\tError:",1-b_cor
+        # print "Frame Occupancy:"
+        # print "\tLength:",len(bob_fo)
+        # b_co = sum(bob_fo==alice_fo)
+        # b_cor = float(b_co)/len(bob_fo)
+        # print "\tCoincidence:",b_co,b_cor
+        # print "\tError:",1-b_cor
     
-        print "Frame Location:"
-        print "\tLength:",len(bob_nbf)
-        nb_co = sum(alice_nbf==bob_nbf)
-        nb_cor = float(nb_co)/len(bob_nbf)
-        print "\tCoincidence:",nb_co,nb_cor
-        print "\tError:",1-nb_cor
+        # print "Frame Location:"
+        # print "\tLength:",len(bob_nbf)
+        # nb_co = sum(alice_nbf==bob_nbf)
+        # nb_cor = float(nb_co)/len(bob_nbf)
+        # print "\tCoincidence:",nb_co,nb_cor
+        # print "\tError:",1-nb_cor
 
 
 
-        #The probability of a 1 in the original-original sequence
-        p1 = float(len(alice))/alice[-1]
-        print "p1:",p1,float(len(bob))/bob[-1]
+        # #The probability of a 1 in the original-original sequence
+        # p1 = float(len(alice))/alice[-1]
+        # print "p1:",p1,float(len(bob))/bob[-1]
     
-        total_c = intersect1d(alice,bob)
-        p1g1 = float(len(total_c))/len(alice)
-        print "Coincidence rate (p1g1):",p1g1,float(len(total_c))/len(bob)
+        # total_c = intersect1d(alice,bob)
+        # p1g1 = float(len(total_c))/len(alice)
+        # print "Coincidence rate (p1g1):",p1g1,float(len(total_c))/len(bob)
 
-        if (any(alice_fo >= frame_size) or any(bob_fo >= frame_size)):
-            print "WARNING: Over the TOP!"
-            alice_fo[alice_fo >= frame_size]=frame_size-1
-            bob_fo[bob_fo >= frame_size]=frame_size-1
-        swtransmat = transitionMatrix_data2(alice_fo,bob_fo,frame_size)
-        swpl = probLetter(alice_fo,frame_size)
-        print "Letter Probabilities:"
-        print swpl
-        print "Transition Matrix (SW):"
-        print swtransmat
+        # if (any(alice_fo >= frame_size) or any(bob_fo >= frame_size)):
+        #     print "WARNING: Over the TOP!"
+        #     alice_fo[alice_fo >= frame_size]=frame_size-1
+        #     bob_fo[bob_fo >= frame_size]=frame_size-1
+        # swtransmat = transitionMatrix_data2(alice_fo,bob_fo,frame_size)
+        # swpl = probLetter(alice_fo,frame_size)
+        # print "Letter Probabilities:"
+        # print swpl
+        # print "Transition Matrix (SW):"
+        # print swtransmat
 
-        nbtransmat = transitionMatrix_data2(alice_nbf,bob_nbf,frame_size)
-        nbpl = probLetter(alice_nbf,frame_size)
-        print "Letter Probabilities:"
-        print nbpl
-        print "Transition Matrix (NB):"
-        print nbtransmat
+        # nbtransmat = transitionMatrix_data2(alice_nbf,bob_nbf,frame_size)
+        # nbpl = probLetter(alice_nbf,frame_size)
+        # print "Letter Probabilities:"
+        # print nbpl
+        # print "Transition Matrix (NB):"
+        # print nbtransmat
 
-        #The total number of original bins is alice, and the final bits is the number of nonbinary left
-        nb_bperf= maxtag_a/len(bob_nbf)
-        print "Number of original bits per nonbinary:",nb_bperf
-
-
-        #2-x theory
-        multi_c = float(sum(logical_and(multialice,multibob)))
-        multi_p1b = float(sum(multibob))/float(len(multibob))
-        multi_p1g1b = multi_c/float(sum(multibob))
-        multi_p1a = float(sum(multialice))/float(len(multialice))
-        if(sum(multialice)!=0):
-            multi_p1g1a = multi_c/float(sum(multialice))
-        else:
-            multi_p1g1a = multi_c/float(1)
-        multi_bperf = maxtag_a/float(len(multibob))
-        print "MULTI"
-        print "Length:",len(multibob)
-        print "Ones:",sum(multibob),sum(multialice)
-        print "Coincidences",multi_c
-        print "p1",multi_p1b,multi_p1a
-        print "p1g1",multi_p1g1b,multi_p1g1a
-        print "Number of original bits per multi:",multi_bperf
-        entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
-        multientropy = entropy_left/multi_bperf
+        # #The total number of original bins is alice, and the final bits is the number of nonbinary left
+        # nb_bperf= maxtag_a/len(bob_nbf)
+        # print "Number of original bits per nonbinary:",nb_bperf
 
 
-        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1,0.27,frame_size,swpl,swtransmat,nb_bperf,nbpl,nbtransmat)
-        f=open("results/THEORY_2014_6_3_high.csv","a")
-        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe)+" "+str(multientropy)+"\n")
-        f.close()
+        # #2-x theory
+        # multi_c = float(sum(logical_and(multialice,multibob)))
+        # multi_p1b = float(sum(multibob))/float(len(multibob))
+        # multi_p1g1b = multi_c/float(sum(multibob))
+        # multi_p1a = float(sum(multialice))/float(len(multialice))
+        # if(sum(multialice)!=0):
+        #     multi_p1g1a = multi_c/float(sum(multialice))
+        # else:
+        #     multi_p1g1a = multi_c/float(1)
+        # multi_bperf = maxtag_a/float(len(multibob))
+        # print "MULTI"
+        # print "Length:",len(multibob)
+        # print "Ones:",sum(multibob),sum(multialice)
+        # print "Coincidences",multi_c
+        # print "p1",multi_p1b,multi_p1a
+        # print "p1g1",multi_p1g1b,multi_p1g1a
+        # print "Number of original bits per multi:",multi_bperf
+        # entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
+        # multientropy = entropy_left/multi_bperf
+
+
+        # (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1,0.27,frame_size,swpl,swtransmat,nb_bperf,nbpl,nbtransmat)
+        # f=open("results/THEORY_2014_6_3_high.csv","a")
+        # f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe)+" "+str(multientropy)+"\n")
+        # f.close()

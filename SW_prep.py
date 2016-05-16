@@ -159,7 +159,7 @@ def readMatrix(fname):
 def randomMatrix(bits,checks,parities=3):
     #The matrix is created using its transpose to add parity checks to each bit
     mat = lil_matrix((bits,checks),dtype = uint16)
-    
+    print mat
     for i in xrange(mat.shape[0]):
         j=0
         while (j<parities):
@@ -174,12 +174,16 @@ def randomMatrix(bits,checks,parities=3):
 def rowmin(mat,rentries):
     failrows=0
     mat = mat.asformat("lil").copy()
+    print mat, "printing rowmin mat"
     for i in xrange(len(mat.rows)):
-        while (len(mat.rows[i])<rentries+1):    #The +1 is there due to identity
-            loc = randmodule.randrange(0,mat.shape[1])
-            if (mat[i,loc]==0):
-                mat[i,loc]=1
-                failrows+=1
+        pass
+#         print len(mat.rows[i]),"<",rentries+1
+#WTF?Infinite loop
+#         while (len(mat.rows[i])<rentries+1):    #The +1 is there due to identity
+#             loc = randmodule.randrange(0,mat.shape[1])
+#             if (mat[i,loc]==0):
+#                 mat[i,loc]=1
+#                 failrows+=1
     #print "Added",failrows,"entries"
     return mat
 

@@ -24,6 +24,7 @@ from scipy.sparse import *
 def encode(parityMatrix, inputbits, alphabet):
     #The parityMatrix has the same width as inputbits,
     #so all that really needs to be done is matrix multiplication: parityMatrix * inputbits
+    print parityMatrix
     return (parityMatrix.dot(inputbits)%alphabet).astype(uint16)
     
 #CHECK
@@ -892,7 +893,7 @@ def getIteration(self):
 if (__name__=="__main__"):
     from SW_prep import *
     print "Loading arrays"
-    d= loadtxt("./FRAME_128_DATA.csv",dtype=int)
+    d= loadtxt("./DataFiles/FRAME_128_DATA.csv",dtype=int)
     alice_sw =  d[0:]
     bob_sw = d[1:]
     total=len(alice_sw)
@@ -900,14 +901,19 @@ if (__name__=="__main__"):
     #bob_sw = load("./real_results/Aalice_h1x.npy")
     #print transitionMatrix_data2(alice_sw,bob_sw,128)
     #original    emat = sequenceProbMatrix(alice_sw,transitionMatrix_data2(alice_sw,bob_sw,128))
-
+    
     emat = sequenceProbMatrix(alice_sw,transitionMatrix_data2(alice_sw,bob_sw,128)) # changed to 126 as 
+    print "finished emat"
     #print "Making Wheel"
     #m= wheelmat.wheel(100000,50000)
     for i in [400000,400000,400000,350000,350000,350000,350000,350000]:
         m=randomMatrix(total,i,2)
+        print m
         m=rowmin(m,2)
+        print m
+        print "lenghts",(m[0].getnnz(), len(bob_sw[0]))
         syn=encode(m,bob_sw,128)
+        print "finished encoding"
         #l=SW_LDPC(m,syn,emat,original=data,decoder=(SW_nbBit_dbg,SW_nbCheck_dbg))
         l=SW_LDPC(m,syn,emat,original=bob_sw,decoder='bp-fft')
         l.decode(iterations=70,frozenFor=5)

@@ -26,12 +26,12 @@ def read_raw_file(alice_raw_filename, bob_raw_filename, resolution=None):
     if (resolution):
         alice_timetags = around((alice_file_contents[1, :] -
                                  alice_file_contents[1, 0]) / resolution).astype(uint64)
-        bob_timetags = around((bob_file_contents[1, :] -
+        bob_timetags   = around((bob_file_contents[1, :] -
                                  bob_file_contents[1, 0]) / resolution).astype(uint64)
     else:
         alice_timetags = (alice_file_contents[1, :] -
                                 alice_file_contents[1, 0]).astype(uint64)
-        bob_timetags = (bob_file_contents[1, :] -
+        bob_timetags =   (bob_file_contents[1, :] -
                                 bob_file_contents[1, 0]).astype(uint64)
     print("alice channels")
     print(alice__channels)
@@ -67,8 +67,8 @@ if (__name__ == '__main__'):
     
     
     
-    alice_raw_filename = "06032014_maxpower_268_0.csv"
-    bob_raw_filename = "06032014_maxpower_268_1.csv"
+    alice_raw_filename = "DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
+    bob_raw_filename = "DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
     
     resolution = 5e-11 
     alice_bob_ch_ttag =read_raw_file(alice_raw_filename, bob_raw_filename,resolution)
