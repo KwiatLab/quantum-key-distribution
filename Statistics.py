@@ -95,8 +95,26 @@ def calculate_frame_occupancy(binary_string, frame_size):
         
     return frame_occupancy
 
-def calculate_frame_occupancy():
-    
+'''
+TO DO: Test manually first!!!!
+'''
+def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
+    number_of_frames = len(frame_occupancies)
+    frame_locations = zeros(number_of_frames,dtype=uint32)
+    for i in range(len(binary_string)):
+        map_value = 0
+        frame_number = binary_string[i]/frame_size
+        position_in_frame = binary_string[i]%frame_size
+        reverse_position_in_frame = frame_size - position_in_frame
+        map_value +=2**reverse_position_in_frame
+        # to iterate through remaining elements in the frame
+        for j in range (1, int(reverse_position_in_frame)):
+            if binary_string[i+j]/frame_size == frame_number :
+                map_value +=2**(reverse_position_in_frame-j)
+            else:
+                frame_locations[frame_number] = map_value
+                break
+    return frame_locations
 
 def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size=16):
     frame_numbers = timetags.copy()
@@ -297,11 +315,13 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     binary_string_laser = create_binary_string_from_laser_pulses(alice)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,13)):
+    for frame_size in 2**array(range(1,5)):
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
         print("Extracting Data")
-        print calculate_frame_occupancy(binary_string_laser, frame_size)
+        frame_occupancies = calculate_frame_occupancy(binary_string_laser, frame_size)
+
+        print (calculate_frame_locations(binary_string_laser, frame_occupancies, frame_size))
         # (bob_fo,bob_fl,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
         # print("frame occupancy NEW")
         # print(alice_fo)
