@@ -47,12 +47,6 @@ from SlepianWolf import *
 from entropy_calculator import *
 from itertools import *
 
-def probLetter(l,alph):
-    p=zeros(alph)
-    for i in xrange(alph):
-        p[i]=sum(l==i)
-    p/=len(l)
-    return p
 
 #Assumes that the person's data is ordered
 
@@ -85,14 +79,41 @@ def create_binary_string_from_laser_pulses(timetags, binsize = 263.15, relative_
 
     return bin_string
 
+def log2_modified(x):
+    # if letter probability is 0 returns 0
+    if x > 0:
+        return numpy.log2(x)
+    return 0
+
+def get_size_of_alphabet(frame_size):
+    # generates frame size binary string with 1 (maximum alphabet value) and converts it to integer
+    return int('1'*frame_size, 2)
+
+def letter_probabilities(frame_locations, size_of_alphabet):
+    probabilities = zeros(size_of_alphabet)
+    for letter in xrange(size_of_alphabet):
+        # Counts occurences of the particular mapping value (letter) in the frame_locations array 
+        probabilities[letter] = sum(frame_locations == letter)
+    # divides by total number  of entries to obtain probability
+    probabilities /= len(frame_locations)
+    return probabilities
+
+def calculate_frame_entropy(frame_locations, frame_size):
+    entropy = 0
+    size_of_alphabet = get_size_of_alphabet(frame_size)
+    probabilities = letter_probabilities(frame_locations, size_of_alphabet)
+    for i in xrange(size_of_alphabet):
+        entropy += probabilities[i]*log2_modified(probabilities[i])
+    return entropy*(-1)
+
 def calculate_frame_occupancy(binary_string, frame_size):
 
-    number_of_frames = around(binary_string[-1]/frame_size)+1
+    number_of_frames = around(binary_string[-1]/frame_size + 1)
     print "Total number of frames: ", number_of_frames
-    frame_occupancy = zeros(number_of_frames,dtype=uint16)
+    frame_occupancy = zeros(int(number_of_frames),dtype=uint16)
     
     for event_index in binary_string:
-        frame_occupancy[event_index/frame_size] +=1    
+        frame_occupancy[int(event_index)/frame_size] +=1    
         
     return frame_occupancy
 
@@ -108,7 +129,7 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
         i+=1
         # print "------------new iteration------------------"
         map_value = 0
-        frame_number = element/frame_size
+        frame_number = int(element/frame_size)
         # print "Frame number is: ", frame_number 
         position_in_frame = element%frame_size
         # print "Position in frame is: ", position_in_frame
@@ -117,7 +138,7 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
         map_value +=2**binary_position
         # print "Map value: ", map_value
         # to iterate through remaining elements in the frame
-        for j in range (position_in_frame+1, frame_size):
+        for j in range (int(position_in_frame+1), frame_size):
             # print "position of element to be checked: ",(frame_number*frame_size+j)
             if (frame_number*frame_size+j) in binary_string  :
                 # print "more elements to find"
@@ -317,32 +338,38 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     #saveprep("main_high",*prep())
     numpy.set_printoptions(edgeitems = 100) 
     
-    
-    # print("alice channels")
-    # print(alice_pol)
-    print("alice ttags")
-   # print(alice)
-    # print ("bob channels")
-    # print(bob_pol)
-    print("bob ttags")
 
-    binary_string_laser = create_binary_string_from_laser_pulses(alice)
+    alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
+    bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,2)):
+    for frame_size in 2**array(range(1,13)):
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
         print("Extracting Data")
-        frame_occupancies = calculate_frame_occupancy(binary_string_laser, frame_size)
         
-#         can test frame_location algorithm with following line
-#         print calculate_frame_locations(array([0,1,2,3,4,5,6,7,8,9,10,11,12]), array([4,4,4,1]), 4)
+        # can test frame_location algorithm with following line
+        # print calculate_frame_locations(array([0,1,2,3,4,5,6,7,8,9,10,11,12]), array([4,4,4,1]), 4)
 
+        # Old implementation
         # (bob_fo,bob_fl,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
-        # print("frame occupancy NEW")
-        # print(alice_fo)
-        # print("frame location sequnces NEW")
-        # print(alice_fl)
+
+        print("Calculating frame occupancies...")
+        alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
+        # bob_frame_occupancies = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
+
+        print("Calculating frame locations...")
+        alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+        # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
+
+        print calculate_frame_entropy(alice_frame_locations, frame_size)
+
+        # alice_fo = alice_frame_occupancies
+        # bob_fo = bob_frame_occupancies
+
+        # alice_fl = alice_frame_locations
+        # bob_fl = bob_frame_locations
+
         # print "->Extracting ideal FRAME_OCCUPANCY (1-1) and POLARIZATION arrays"
         # sys.stdout.flush()
         

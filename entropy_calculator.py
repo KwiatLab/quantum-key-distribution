@@ -5,7 +5,9 @@ Created on Wed Jul 18 2012
 #from pylab import *
 import numpy
 def log2(x):
-    return numpy.log2(x)
+    if x > 0:
+        return numpy.log2(x)
+    return 0
 
 """
 Given a sequence with an alphabet size 'alphabet' with each letter equally likely (symmetric), the entropy per letter is:
@@ -158,6 +160,7 @@ def theoretical(p1a,p1g1a,p1b,p1g1b):
 
 
 def entropy_calculate(
+
     p1a=0.05,        #The probability of a photon in a time bin (p1)
     p1g1a=0.4,       #The data's heralding efficiency (coincidence rate) (p1 given 1)
     p1b=0.05,        #The probability of a photon in a time bin (p1)
