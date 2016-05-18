@@ -92,15 +92,47 @@ def get_size_of_alphabet(frame_size):
 def letter_probabilities(frame_locations, size_of_alphabet):
     probabilities = zeros(size_of_alphabet)
     for letter in xrange(size_of_alphabet):
-        # Counts occurences of the particular mapping value (letter) in the frame_locations array 
+        # Counts occurences of the particular mapping value (letter) in the frame_locations array
+
         probabilities[letter] = sum(frame_locations == letter)
+        print "Letter (binary string): ", letter, " has probability: ", probabilities[letter] / len(frame_locations)
+
     # divides by total number  of entries to obtain probability
     probabilities /= len(frame_locations)
     return probabilities
 
+
+def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
+    number_of_ones = sum(frame_occupancies)
+    length_of_binary_string = len(frame_occupancies) * frame_size
+    probability_one = number_of_ones / length_of_binary_string
+    probability_zero = 1 - probability_one
+
+    '''
+     as by increasing frame we increase the amount of ones that can be stored inside
+     (i.e. 10 can store 2 ones max and 100 can store 3 ones max)
+    '''
+
+    size_of_alphabet = frame_size
+    probabilities = zeros(size_of_alphabet)
+    for letter in xrange(size_of_alphabet):
+        # Counts probability of particular occupancy to occur (i.e. 1100 == 0011 == 0101 ==1010 == 0110 == 1001)
+        probabilities[letter] = sum(frame_occupancies == letter)*(probability_one**letter)*(probability_zero**(frame_size-letter))
+        print "Letter (occupancy): ", letter, " has probability: ", probabilities[letter] / len(frame_occupancies)
+    # divides by total number  of entries to obtain probability
+    probabilities /= len(frame_occupancies)
+    return probabilities
+def calculate_frame_entropy_using_occupancy(frame_occupancies, frame_size):
+    entropy = 0
+    size_of_alphabet = frame_size + 1
+    probabilities = letter_probabilities_using_occupancy(frame_occupancies, frame_size+1)
+    for i in xrange(size_of_alphabet):
+        entropy += probabilities[i]*log2_modified(probabilities[i])
+    return entropy*(-1)  
+
 def calculate_frame_entropy(frame_locations, frame_size):
     entropy = 0
-    size_of_alphabet = get_size_of_alphabet(frame_size)
+    size_of_alphabet = get_size_of_alphabet(frame_size) + 1 
     probabilities = letter_probabilities(frame_locations, size_of_alphabet)
     for i in xrange(size_of_alphabet):
         entropy += probabilities[i]*log2_modified(probabilities[i])
@@ -361,9 +393,11 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print("Calculating frame locations...")
         alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-
+        print "Entropy using frame mapping: "
         print calculate_frame_entropy(alice_frame_locations, frame_size)
 
+        print "Entropy using frame occupancy: "
+        print calculate_frame_entropy_using_occupancy(alice_frame_locations, frame_size)
         # alice_fo = alice_frame_occupancies
         # bob_fo = bob_frame_occupancies
 
