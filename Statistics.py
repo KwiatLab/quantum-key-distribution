@@ -103,7 +103,7 @@ def letter_probabilities(frame_locations, size_of_alphabet):
     return probabilities
 
 def get_binomial_coefficient(frame_size, letter):
-    return factorial(frame_size, exact = True)/(factorial(letter)*factorial(frame_size-letter))
+    return float(factorial(frame_size)/(factorial(letter)*factorial(frame_size-letter)))
 
 def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
     number_of_ones = sum(frame_occupancies)
@@ -118,12 +118,14 @@ def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
 
     size_of_alphabet = frame_size
     probabilities = zeros(size_of_alphabet)
+    print "Probability of one: ", probability_one
+    print "Probability of zero: ", probability_zero
+    
     for letter in xrange(size_of_alphabet):
         # Counts probability of particular occupancy to occur (i.e. 1100 == 0011 == 0101 ==1010 == 0110 == 1001)
         probabilities[letter] = ((probability_one**letter)*(probability_zero**(frame_size-letter))) * get_binomial_coefficient(frame_size, letter)
-        print "Letter (occupancy): ", letter, " has probability: ", probabilities[letter] / len(frame_occupancies)
+        print "Letter (occupancy): ", letter, " has probability: ", probabilities[letter]
     # divides by total number  of entries to obtain probability
-    probabilities /= len(frame_occupancies)
     return probabilities
 
 def calculate_frame_entropy_using_occupancy(frame_occupancies, frame_size):
@@ -379,7 +381,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,13)):
+    for frame_size in 2**array(range(1,6)):
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
         print("Extracting Data")
@@ -395,13 +397,13 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # bob_frame_occupancies = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
 
         print("Calculating frame locations...")
-        alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+#         alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-        print "Entropy using frame mapping: "
-        print calculate_frame_entropy(alice_frame_locations, frame_size)
+#         print "Entropy using frame mapping: "
+#         print calculate_frame_entropy(alice_frame_locations, frame_size)
 
         print "Entropy using frame occupancy: "
-        print calculate_frame_entropy_using_occupancy(alice_frame_locations, frame_size)
+        print calculate_frame_entropy_using_occupancy(alice_frame_occupancies, frame_size)
         # alice_fo = alice_frame_occupancies
         # bob_fo = bob_frame_occupancies
 
