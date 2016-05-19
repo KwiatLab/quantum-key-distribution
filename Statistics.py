@@ -189,6 +189,21 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
         # print "Final map value: ", map_value
     return frame_locations
 
+def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, frame_size):
+    number_of_frames = len(frame_occupancies)
+    frame_locations = zeros(number_of_frames,dtype=uint32)
+    number_of_timetags = len(binary_string)
+    frame_numbers = binary_string.copy()
+    frame_numbers /= frame_size
+
+    for i in range(number_of_timetags):
+        mapping_value = 0
+        frame_number = frame_numbers[i]
+        mapping_value = (binary_string[i] % frame_size) * (frame_size**(frame_occupancies[frame_number]-1))
+        frame_locations[frame_number] += mapping_value
+
+    return frame_locations
+
 def createLDPCdata(timetags,polarizations,total_number_of_frames=None,frame_size=16):
     frame_numbers = timetags.copy()
     frame_numbers /= frame_size
@@ -357,18 +372,19 @@ def loadprep(fname):
 
     return (alice,bob,alice_pol,bob_pol)
 
-def resequence1(num,alph,times,seq=None,j=0):
+def resequence1(location_value,frame_size,occupancy,seq=None,j=0):
     if (seq==None):
-        seq = zeros(alph,dtype=bool)
-    for i in range(times):
-        seq[j+num%alph] = True
-        num=num/alph
+        seq = zeros(frame_size,dtype=bool)
+    for i in range(occupancy):
+        seq[j+location_value%frame_size] = True
+        location_value=location_value/frame_size
     return seq
 
-def resequence(num,tries,alphabet):
-    seq = zeros(alphabet*len(num),dtype=bool)
-    for i in xrange(len(num)):
-        resequence1(num[i],alphabet,tries[i],seq,alphabet*i)
+def resequence(locations,occupancies,frame_size):
+    # create array of timetags length
+    seq = zeros(frame_size*len(locations),dtype=bool)
+    for i in xrange(len(locations)):
+        resequence1(locations[i],frame_size,occupancies[i],seq,frame_size*i)
     return seq
 
 
@@ -381,7 +397,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,6)):
+    for frame_size in 2**array(range(1,7)):
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
         print("Extracting Data")
@@ -390,45 +406,54 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # print calculate_frame_locations(array([0,1,2,3,4,5,6,7,8,9,10,11,12]), array([4,4,4,1]), 4)
 
         # Old implementation
-        # (bob_fo,bob_fl,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
+        # (bob_frame_occupancies,bob_frame_locations,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
 
         print("Calculating frame occupancies...")
         alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
-        # bob_frame_occupancies = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
+        bob_frame_occupancies   = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
 
         print("Calculating frame locations...")
-#         alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+
+        # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-#         print "Entropy using frame mapping: "
-#         print calculate_frame_entropy(alice_frame_locations, frame_size)
+        # print "Entropy using frame mapping: "
+        # print calculate_frame_entropy(alice_frame_locations, frame_size)
+
+
+        # not binary mapping but calculates way faster
+
+        alice_frame_locations = calculate_frame_locations_daniels_mapping(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+        bob_frame_locations   = calculate_frame_locations_daniels_mapping(bob_binary_string_laser,bob_frame_occupancies,frame_size)
+
+        print alice_frame_locations
 
         print "Entropy using frame occupancy: "
         print calculate_frame_entropy_using_occupancy(alice_frame_occupancies, frame_size)
-        # alice_fo = alice_frame_occupancies
-        # bob_fo = bob_frame_occupancies
 
-        # alice_fl = alice_frame_locations
-        # bob_fl = bob_frame_locations
 
-        # print "->Extracting ideal FRAME_OCCUPANCY (1-1) and POLARIZATION arrays"
-        # sys.stdout.flush()
+        print "->Extracting ideal FRAME_OCCUPANCY (1-1) and POLARIZATION arrays"
+        sys.stdout.flush()
         
         # #2-1,2-2,etc:
-        # bigmask = logical_or(alice_fo>1,bob_fo>1)
-        # bigalice = alice_fl[bigmask]
-        # bigbob = bob_fl[bigmask]
-        # bigalice_t = alice_fo[bigmask]
-        # bigbob_t = bob_fo[bigmask]
+        # calculates where at least one of them has higher occupancy than one
+        occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
 
-        # multibob = resequence(bigbob,bigbob_t,frame_size)
-        # multialice = resequence(bigalice,bigalice_t,frame_size)
+        # takes frames which were non zero either in alice or bob data
+        alice_potential_non_zero_locations = alice_frame_locations[occupancy_grater_than_one]
+        bob_potential_non_zero_locations = bob_frame_locations[occupancy_grater_than_one]
+
+        alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
+        bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
+
+        # multibob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
+        # multialice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
 
         # #1-1,etc
 
-        # nb_mask = logical_and(alice_fo==1,bob_fo==1)
+        # nb_mask = logical_and(alice_frame_occupancies==1,bob_frame_occupancies==1)
     
-        # alice_nbf = alice_fl[nb_mask]
-        # bob_nbf = bob_fl[nb_mask]
+        # alice_nbf = alice_frame_locations[nb_mask]
+        # bob_nbf = bob_frame_locations[nb_mask]
     
         # alice_pf = alice_p[nb_mask]
         # bob_pf = bob_p[nb_mask]
@@ -447,9 +472,9 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # sys.stdout.flush()
     
         # print "Frame Occupancy:"
-        # print "\tLength:",len(bob_fo)
-        # b_co = sum(bob_fo==alice_fo)
-        # b_cor = float(b_co)/len(bob_fo)
+        # print "\tLength:",len(bob_frame_occupancies)
+        # b_co = sum(bob_frame_occupancies==alice_frame_occupancies)
+        # b_cor = float(b_co)/len(bob_frame_occupancies)
         # print "\tCoincidence:",b_co,b_cor
         # print "\tError:",1-b_cor
     
@@ -470,12 +495,12 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # p1g1 = float(len(total_c))/len(alice)
         # print "Coincidence rate (p1g1):",p1g1,float(len(total_c))/len(bob)
 
-        # if (any(alice_fo >= frame_size) or any(bob_fo >= frame_size)):
+        # if (any(alice_frame_occupancies >= frame_size) or any(bob_frame_occupancies >= frame_size)):
         #     print "WARNING: Over the TOP!"
-        #     alice_fo[alice_fo >= frame_size]=frame_size-1
-        #     bob_fo[bob_fo >= frame_size]=frame_size-1
-        # swtransmat = transitionMatrix_data2(alice_fo,bob_fo,frame_size)
-        # swpl = probLetter(alice_fo,frame_size)
+        #     alice_frame_occupancies[alice_frame_occupancies >= frame_size]=frame_size-1
+        #     bob_frame_occupancies[bob_frame_occupancies >= frame_size]=frame_size-1
+        # swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+        # swpl = probLetter(alice_frame_occupancies,frame_size)
         # print "Letter Probabilities:"
         # print swpl
         # print "Transition Matrix (SW):"
