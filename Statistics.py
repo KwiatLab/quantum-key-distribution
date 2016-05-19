@@ -38,6 +38,7 @@ import numpy
 from matplotlib import *
 from multiprocessing import Pool
 from scipy.optimize import curve_fit
+from scipy.special import factorial
 import ttag
 import sys
 from scipy.weave import inline
@@ -101,6 +102,8 @@ def letter_probabilities(frame_locations, size_of_alphabet):
     probabilities /= len(frame_locations)
     return probabilities
 
+def get_binary_coeffcient(frame_size, letter):
+    return factorial(frame_size, exact = True)/(factorial(letter)*factorial(frame_size-letter))
 
 def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
     number_of_ones = sum(frame_occupancies)
@@ -117,11 +120,12 @@ def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
     probabilities = zeros(size_of_alphabet)
     for letter in xrange(size_of_alphabet):
         # Counts probability of particular occupancy to occur (i.e. 1100 == 0011 == 0101 ==1010 == 0110 == 1001)
-        probabilities[letter] = sum(frame_occupancies == letter)*(probability_one**letter)*(probability_zero**(frame_size-letter))
+        probabilities[letter] = ((probability_one**letter)*(probability_zero**(frame_size-letter))) * get_binary_coeffiecient(frame_size, letter)
         print "Letter (occupancy): ", letter, " has probability: ", probabilities[letter] / len(frame_occupancies)
     # divides by total number  of entries to obtain probability
     probabilities /= len(frame_occupancies)
     return probabilities
+
 def calculate_frame_entropy_using_occupancy(frame_occupancies, frame_size):
     entropy = 0
     size_of_alphabet = frame_size + 1
