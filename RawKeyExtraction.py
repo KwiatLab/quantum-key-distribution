@@ -43,15 +43,23 @@ if (__name__ == '__main__'):
     # print("->Resolution:",bufAlice.resolution)
     # print("->Channels:",bufAlice.channels)
     
-    #sorting Alice just in case ttags----------
     aliceTtags = loadedData[0]
-    # print "Sorting Alice Tags"
     aliceChannels =loadedData[2]
-   
+
+    bobTtags = loadedData[1]   
+    bobChannels =loadedData[3]
+
+    # make them of equal size
+    if (len(aliceTtags) > len(bobTtags)):
+        aliceTtags    = aliceTtags[:len(bobTtags)]
+        aliceChannels = aliceChannels[:len(bobChannels)]
+    else:
+        bobTtags    = bobTtags[:len(aliceTtags)]
+        bobChannels = bobChannels[:len(aliceChannels)]
+
     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
     aliceChannels = take(aliceChannels,indexes_of_order)
     aliceTtags = take(aliceTtags,indexes_of_order)
-    print aliceTtags[:100]
     #------------------------------------
     # print("Alice ready. Adding Alice Data to Buffer")
     bufAlice.addarray(aliceChannels,aliceTtags)
@@ -72,9 +80,6 @@ if (__name__ == '__main__'):
     # print("->Channels:",bufBob.channels)
     
     #sorting Bob just in case ttags----------
-    bobTtags = loadedData[1]
-   
-    bobChannels =loadedData[3]
     # print ("Sorting Bob Tags")
     indexes_of_order = bobTtags.argsort(kind = "mergesort")
     
