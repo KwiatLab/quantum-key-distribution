@@ -278,7 +278,7 @@ def bincoincidences(A,B,pm=26):
         A[:]-=A[0]-pm
         B[:]-=A[0]-pm
     else:
-        A[:]-=B[0]-pmf
+        A[:]-=B[0]-pm
         B[:]-=B[0]-pm
     
     #Split into time bins
@@ -529,18 +529,18 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
             alice_frame_occupancies[alice_frame_occupancies >= frame_size]=frame_size-1
             bob_frame_occupancies[bob_frame_occupancies >= frame_size]=frame_size-1
         swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+#--recheck
         # swpl = probLetter(alice_frame_occupancies,frame_size)
         # print "Letter Probabilities:"
         # print swpl
-        # print "Transition Matrix (SW):"
-        # print swtransmat
-
-        # nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
+        print "Transition Matrix (SW):"
+        print swtransmat
+        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
         # nbpl = probLetter(alice_non_zero_positions_in_frame,frame_size)
         # print "Letter Probabilities:"
         # print nbpl
-        # print "Transition Matrix (NB):"
-        # print nbtransmat
+        print "Transition Matrix (NB):"
+        print nbtransmat
 
         # #The total number of original bins is alice, and the final bits is the number of nonbinary left
         # nb_bperf= maxtag_a/len(bob_non_zero_positions_in_frame)

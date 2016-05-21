@@ -64,7 +64,7 @@ def normalizecol(mat):
     
     #Sum up all the values in each column
     colsum= sum(res,0)
-    
+    # Do I want to check zero?     
     if (any(colsum<=0.0) or any(colsum >= Inf)):
         print "Failed normalizecol:",colsum
         colsum[colsum<=0.0]=1.0
