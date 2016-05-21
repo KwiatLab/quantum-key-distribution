@@ -254,13 +254,13 @@ def entropy_calculate2(
     ideal_entropy2 = theoretical(probability_of_one_in_b,coincidence_rate_b,probability_of_one_in_b,coincidence_rate_b)
     print "\n\nFRAME OCCUPANCY THEORETICAL (APPROX) ENTROPY"
     #Note that the entropy retained is per alphabet bits of the original sequence
-    b_entropy = theoretical_mat_nb(b_plet,b_mat,alphabet_size)/alph
+    b_entropy = theoretical_mat_nb(b_plet,b_mat,alph)/alph
 
     print "\nPercentage of total entropy recovered:",b_entropy/ideal_entropy2
 
     print "\n\nFRAME LOCATION THEORETICAL (APPROX) ENTROPY"
     #Note that the entropy retained is for a large amount of original sequence bits
-    nb_entropy = theoretical_mat_nb(nb_plet,transition_matrix_non_binary,alphabet_size)/nb_bperf
+    nb_entropy = theoretical_mat_nb(nb_plet,transition_matrix_non_binary,alph)/nb_bperf
 
     print "\nPercentage of total entropy recovered:",nb_entropy/ideal_entropy2
 

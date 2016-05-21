@@ -528,23 +528,24 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
             print "WARNING: Over the TOP!"
             alice_frame_occupancies[alice_frame_occupancies >= frame_size]=frame_size-1
             bob_frame_occupancies[bob_frame_occupancies >= frame_size]=frame_size-1
-        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
-#--recheck
-        # swpl = probLetter(alice_frame_occupancies,frame_size)
-        # print "Letter Probabilities:"
-        # print swpl
-        print "Transition Matrix (SW):"
-        print swtransmat
-        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
-        # nbpl = probLetter(alice_non_zero_positions_in_frame,frame_size)
-        # print "Letter Probabilities:"
-        # print nbpl
-        print "Transition Matrix (NB):"
-        print nbtransmat
+        sys.stdout.flush()
 
+        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+        swpl = letter_probabilities(alice_frame_occupancies,frame_size)
+        print "Calucalting Letter Probabilities:"
+        # print swpl
+        print "Calculating Transition Matrix (SW):"
+        # print swtransmat
+        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
+        nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size)
+        print "Calculating Letter Probabilities:"
+        # print nbpl
+        print "Calculating Transition Matrix (NB):"
+        # print nbtransmat
+        maxtag_a = alice[-1]
         # #The total number of original bins is alice, and the final bits is the number of nonbinary left
-        # nb_bperf= maxtag_a/len(bob_non_zero_positions_in_frame)
-        # print "Number of original bits per nonbinary:",nb_bperf
+        nb_bperf= maxtag_a/len(bob_non_zero_positions_in_frame)
+        print "Number of original bits per nonbinary:",nb_bperf
 
 
         # #2-x theory
@@ -566,9 +567,11 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # print "Number of original bits per multi:",multi_bperf
         # entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
         # multientropy = entropy_left/multi_bperf
+        print "bandom skaiciuot boba"
+        p1_bob = float(len(bob))/bob[-1]
+        print"suskaiciavom"
 
-
-        # (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1,0.27,frame_size,swpl,swtransmat,nb_bperf,nbpl,nbtransmat)
-        # f=open("results/THEORY_2014_6_3_high.csv","a")
-        # f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe)+" "+str(multientropy)+"\n")
-        # f.close()
+        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,0.27,frame_size,swpl,swtransmat,nb_bperf,nbpl,nbtransmat)
+        f=open("resultsLaurynas/entropy_1","a")
+        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe)+" "+"\n")
+        f.close()
