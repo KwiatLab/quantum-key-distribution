@@ -415,7 +415,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,7)):
+    for frame_size in 2**array(range(1,13)):
         print "\n"
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
@@ -458,17 +458,17 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # ------------------------DEALS WITH OCCUPANCIES > 1 ------------------------------------------------------------
         # #2-1,2-2,etc:
         # calculates where at least one of them has higher occupancy than one
-        # occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
+        occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
 
         # takes frames which were non zero either in alice or bob data
-        # alice_potential_non_zero_locations = alice_frame_locations[occupancy_grater_than_one]
-        # bob_potential_non_zero_locations = bob_frame_locations[occupancy_grater_than_one]
+        alice_potential_non_zero_locations = alice_frame_locations[occupancy_grater_than_one]
+        bob_potential_non_zero_locations = bob_frame_locations[occupancy_grater_than_one]
 
-        # alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
-        # bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
+        alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
+        bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
 
-        # multibob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
-        # multialice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
+        multibob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
+        multialice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
         #-----------------------------------------------------------------------------------------------------------------
 
         # #1-1,etc
@@ -531,9 +531,10 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         sys.stdout.flush()
 
         swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
-        swpl = letter_probabilities(alice_frame_occupancies,frame_size)
+        alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size)
+        
         print "Calucalting Letter Probabilities:"
-        # print swpl
+        # print alice_occ_letter_probabilities
         print "Calculating Transition Matrix (SW):"
         # print swtransmat
         nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
@@ -549,29 +550,28 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 
 
         # #2-x theory
-        # multi_c = float(sum(logical_and(multialice,multibob)))
-        # multi_p1b = float(sum(multibob))/float(len(multibob))
-        # multi_p1g1b = multi_c/float(sum(multibob))
-        # multi_p1a = float(sum(multialice))/float(len(multialice))
-        # if(sum(multialice)!=0):
-        #     multi_p1g1a = multi_c/float(sum(multialice))
-        # else:
-        #     multi_p1g1a = multi_c/float(1)
-        # multi_bperf = maxtag_a/float(len(multibob))
-        # print "MULTI"
-        # print "Length:",len(multibob)
-        # print "Ones:",sum(multibob),sum(multialice)
-        # print "Coincidences",multi_c
-        # print "p1",multi_p1b,multi_p1a
-        # print "p1g1",multi_p1g1b,multi_p1g1a
-        # print "Number of original bits per multi:",multi_bperf
-        # entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
-        # multientropy = entropy_left/multi_bperf
-        print "bandom skaiciuot boba"
+        multi_c = float(sum(logical_and(multialice,multibob)))
+        multi_p1b = float(sum(multibob))/float(len(multibob))
+        multi_p1g1b = multi_c/float(sum(multibob))
+        multi_p1a = float(sum(multialice))/float(len(multialice))
+        if(sum(multialice)!=0):
+            multi_p1g1a = multi_c/float(sum(multialice))
+        else:
+            multi_p1g1a = multi_c/float(1)
+        multi_bperf = maxtag_a/float(len(multibob))
+        print "MULTI"
+        print "Length:",len(multibob)
+        print "Ones:",sum(multibob),sum(multialice)
+        print "Coincidences",multi_c
+        print "p1",multi_p1b,multi_p1a
+        print "p1g1",multi_p1g1b,multi_p1g1a
+        print "Number of original bits per multi:",multi_bperf
+        entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
+        multientropy = entropy_left/multi_bperf
+        
         p1_bob = float(len(bob))/bob[-1]
-        print"suskaiciavom"
-
-        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,0.27,frame_size,swpl,swtransmat,nb_bperf,nbpl,nbtransmat)
+        print ("alice vs bob: ",p1,p1_bob)
+        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
         f=open("resultsLaurynas/entropy_1","a")
-        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe)+" "+"\n")
+        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(multientropy)+"\n")
         f.close()

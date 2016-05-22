@@ -60,15 +60,15 @@ Subtracting the two gives the maximum possible entropy left over after running a
 def theoretical_mat_nb(p_letter,transmat,alphabet):
     #p1g1 is coincidence
     #p0g1 is failcoincidence
-    print "Transition Matrix:",transmat
-    print "Alphabet:",alphabet
+    # print "Transition Matrix:",transmat
+    # print "Alphabet:",alphabet
     
     #Each letter of the alphabet has the same probability
     #p_letter = 1/float(alphabet)
     
     p_letA = numpy.dot(p_letter,transmat.transpose())
-    print("PA:",p_letA)
-    print("PB:",p_letter)
+    # print("PA:",p_letA)
+    # print("PB:",p_letter)
     entropy_per_letter = 0.0
     for i in xrange(len(p_letA)):
         if (p_letA[i] > 0):
@@ -120,30 +120,30 @@ Subtracting the two gives the maximum possible entropy left over after running a
 def theoretical(probability_of_one_in_a,coincidence_rate_a,probability_of_one_in_b,coincidence_rate_b):
     
     #Probability calculations
-    p0a=1-probability_of_one_in_a
-    p0b=1-probability_of_one_in_b
-    p0g1a = 1-coincidence_rate_a
-    p0g1b = 1-coincidence_rate_b
+    probability_of_zero_in_a=1-probability_of_one_in_a
+    probability_of_zero_in_b=1-probability_of_one_in_b
+    coincidence_rate_zero_a = 1-coincidence_rate_a
+    coincidence_rate_zero_b = 1-coincidence_rate_b
     
-    p1g0a=p0g1a*probability_of_one_in_a/p0a
-    p1g0b=p0g1b*probability_of_one_in_b/p0b
+    p1g0a=coincidence_rate_zero_a*probability_of_one_in_a/probability_of_zero_in_a
+    p1g0b=coincidence_rate_zero_b*probability_of_one_in_b/probability_of_zero_in_b
     p0g0a=1-p1g0a
     p0g0b=1-p1g0b
     
-    print "A: p0   %f\tp1   %f\np0g1 %f\tp1g1 %f\np0g0 %f\tp1g0 %f\n"%(p0a,probability_of_one_in_a,p0g1a,coincidence_rate_a,p0g0a,p1g0a)
-    print "B: p0   %f\tp1   %f\np0g1 %f\tp1g1 %f\np0g0 %f\tp1g0 %f\n"%(p0b,probability_of_one_in_b,p0g1b,coincidence_rate_b,p0g0b,p1g0b)
+    print "A: p0   %f\tp1   %f\np0g1 %f\tp1g1 %f\np0g0 %f\tp1g0 %f\n"%(probability_of_zero_in_a,probability_of_one_in_a,coincidence_rate_zero_a,coincidence_rate_a,p0g0a,p1g0a)
+    print "B: p0   %f\tp1   %f\np0g1 %f\tp1g1 %f\np0g0 %f\tp1g0 %f\n"%(probability_of_zero_in_b,probability_of_one_in_b,coincidence_rate_zero_b,coincidence_rate_b,p0g0b,p1g0b)
     
     #Entropy calculations
-    entropy_per_bit_a = -probability_of_one_in_a*log2(probability_of_one_in_a)-p0a*log2(p0a)
-    entropy_per_bit_b = -probability_of_one_in_b*log2(probability_of_one_in_b)-p0b*log2(p0b)
+    entropy_per_bit_a = -probability_of_one_in_a*log2(probability_of_one_in_a)-probability_of_zero_in_a*log2(probability_of_zero_in_a)
+    entropy_per_bit_b = -probability_of_one_in_b*log2(probability_of_one_in_b)-probability_of_zero_in_b*log2(probability_of_zero_in_b)
     
     print "A: Entropy Per Bit:",entropy_per_bit_a
     print "B: Entropy Per Bit:",entropy_per_bit_b
     
-    entropy_g1a=-coincidence_rate_a*log2(coincidence_rate_a)-p0g1a*log2(p0g1a)
+    entropy_g1a=-coincidence_rate_a*log2(coincidence_rate_a)-coincidence_rate_zero_a*log2(coincidence_rate_zero_a)
     entropy_g0a=-p1g0a*log2(p1g0a)-p0g0a*log2(p0g0a)
     
-    entropy_agb = entropy_g1a*probability_of_one_in_a+entropy_g0a*p0a
+    entropy_agb = entropy_g1a*probability_of_one_in_a+entropy_g0a*probability_of_zero_in_a
     
     entropy_left = entropy_per_bit_a-entropy_agb
     if (entropy_left<=0.0):
@@ -228,7 +228,7 @@ def entropy_calculate2(
     nb_plet=None,   #nonbinary probability of each letter
     transition_matrix_non_binary=None     #Transition matrix for nonbinary code
     ):
-
+    
     print "\n\nTHEORY:\n\n"
 
     """
