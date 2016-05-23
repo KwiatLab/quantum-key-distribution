@@ -191,14 +191,14 @@ def entropy_calculate(
     nb_entropy = 0.0
     
     if (transition_matrix_non_binary!=None):
-        nb_entropy = theoretical_mat_nb(transition_matrix_non_binary,alph)/nb_bperf
+        nb_entropy = theoretical_mat_nb(transition_matrix_non_binary,alphabet_size)/nb_bperf
     else:
         nb_entropy = theoretical_nb(coincidence_rate_non_binary,alphabet_size)/nb_bperf
 
     print "\nPercentage of total entropy recovered:",nb_entropy/ideal_entropy
 
     #These are calculations of entropy retained for the actual codes
-    test_b_entropy = (1-b_test)/alph
+    test_b_entropy = (1-b_test)/alphabet_size
     test_nb_entropy = log2(alphabet_size)*(1-nb_test)/nb_bperf
 
     print "\n\nCURRENT TEST RESULTS:"

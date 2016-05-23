@@ -392,7 +392,7 @@ def resequence1(location_value,frame_size,occupancy,actual_binary_string_bool=No
         # position of 1 in laser binary string (as location value in case of occ 1 is just position in frame)
         actual_binary_string_bool[frame_offset+location_value%frame_size] = True
         # why would you do this?? this is local variable and is not used anywhere
-        location_value=location_value/frame_size
+        # location_value=location_value/frame_size
 
     # returns boolean array of actual binary string (1s and 0s) size with true in places where 1 occurs in laser binary string
     return actual_binary_string_bool
@@ -467,8 +467,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
         bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
 
-        multibob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
-        multialice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
+        actual_binary_string_bool_bob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
+        actual_binary_string_bool_alice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
         #-----------------------------------------------------------------------------------------------------------------
 
         # #1-1,etc
@@ -528,11 +528,15 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
             print "WARNING: Over the TOP!"
             alice_frame_occupancies[alice_frame_occupancies >= frame_size]=frame_size-1
             bob_frame_occupancies[bob_frame_occupancies >= frame_size]=frame_size-1
+        print ("passed if statem") 
         sys.stdout.flush()
+        print "calc sw translation matrix"
+        # swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+        print "finishedcalc sw translation matrix. getting prob"
 
-        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
         alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size)
-        
+        print "have prob"
+
         print "Calucalting Letter Probabilities:"
         # print alice_occ_letter_probabilities
         print "Calculating Transition Matrix (SW):"
@@ -550,28 +554,38 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 
 
         # #2-x theory
-        multi_c = float(sum(logical_and(multialice,multibob)))
-        multi_p1b = float(sum(multibob))/float(len(multibob))
-        multi_p1g1b = multi_c/float(sum(multibob))
-        multi_p1a = float(sum(multialice))/float(len(multialice))
-        if(sum(multialice)!=0):
-            multi_p1g1a = multi_c/float(sum(multialice))
+        mutual_binary_string_bool = float(sum(logical_and(actual_binary_string_bool_alice,actual_binary_string_bool_bob)))
+        actual_binary_string_bob_prob_one = float(sum(actual_binary_string_bool_bob))/float(len(actual_binary_string_bool_bob))
+        multi_p1g1b = mutual_binary_string_bool/float(sum(actual_binary_string_bool_bob))
+        multi_p1a = float(sum(actual_binary_string_bool_alice))/float(len(actual_binary_string_bool_alice))
+        if(sum(actual_binary_string_bool_alice)!=0):
+            multi_p1g1a = mutual_binary_string_bool/float(sum(actual_binary_string_bool_alice))
         else:
-            multi_p1g1a = multi_c/float(1)
-        multi_bperf = maxtag_a/float(len(multibob))
+            multi_p1g1a = mutual_binary_string_bool/float(1)
+        multi_bperf = maxtag_a/float(len(actual_binary_string_bool_bob))
         print "MULTI"
-        print "Length:",len(multibob)
-        print "Ones:",sum(multibob),sum(multialice)
-        print "Coincidences",multi_c
-        print "p1",multi_p1b,multi_p1a
+        print "Length:",len(actual_binary_string_bool_bob)
+        print "Ones:",sum(actual_binary_string_bool_bob),sum(actual_binary_string_bool_alice)
+        print "Coincidences",mutual_binary_string_bool
+        print "p1",actual_binary_string_bob_prob_one,multi_p1a
         print "p1g1",multi_p1g1b,multi_p1g1a
         print "Number of original bits per multi:",multi_bperf
-        entropy_left = theoretical(multi_p1a,multi_p1g1a,multi_p1b,multi_p1g1b)
-        multientropy = entropy_left/multi_bperf
+#         entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
+#         multientropy = entropy_left/multi_bperf
         
         p1_bob = float(len(bob))/bob[-1]
-        print ("alice vs bob: ",p1,p1_bob)
-        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
+        print ("Getting mutual frame loc")
+
+        mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
+        print "Got bool array"
+        mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
+        print "Converting bool array"
+        entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
+        print ("Opening the file")
+#         (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
         f=open("resultsLaurynas/entropy_1","a")
-        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(multientropy)+"\n")
+
+        # f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(multientropy)+"\n")
+        print "Writing to file"
+        f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
         f.close()
