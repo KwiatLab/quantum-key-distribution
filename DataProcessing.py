@@ -52,10 +52,10 @@ def read_processed_file(alice_processed_filename, bob_processed_filename):
 def saveprep(fname,alice,bob,alice_pol,bob_pol):
     print("Saving Data Arrays")
     sys.stdout.flush()
-    save("./resultsLaurynas/aliceTtags_"+fname+".npy",alice)
-    save("./resultsLaurynas/bobTtags_"+fname+".npy",bob)
-    save("./resultsLaurynas/aliceChannels_"+fname+".npy",alice_pol)
-    save("./resultsLaurynas/bobChannels_"+fname+".npy",bob_pol)
+    save("./resultsLaurynas/aliceTtags_"+fname+"_full.npy",alice)
+    save("./resultsLaurynas/bobTtags_"+fname+"_full.npy",bob)
+    save("./resultsLaurynas/aliceChannels_"+fname+"_full.npy",alice_pol)
+    save("./resultsLaurynas/bobChannels_"+fname+"_full.npy",bob_pol)
     
 if (__name__ == '__main__'):
     
@@ -67,8 +67,8 @@ if (__name__ == '__main__'):
     
     
     
-    alice_raw_filename = "DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
-    bob_raw_filename = "DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
+    alice_raw_filename = "DataFiles/06032014_maxpower_268_0.csv"
+    bob_raw_filename = "DataFiles/06032014_maxpower_268_1.csv"
     
     resolution = 5e-11 
     alice_bob_ch_ttag =read_raw_file(alice_raw_filename, bob_raw_filename,resolution)

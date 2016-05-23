@@ -5,7 +5,9 @@ Created on Wed Jul 18 2012
 #from pylab import *
 import numpy
 def log2(x):
-    return numpy.log2(x)
+    if x > 0:
+        return numpy.log2(x)
+    return 0
 
 """
 Given a sequence with an alphabet size 'alphabet' with each letter equally likely (symmetric), the entropy per letter is:
@@ -57,7 +59,7 @@ Subtracting the two gives the maximum possible entropy left over after running a
 """
 
 
-def theoretical_mat_nb(p_letter,transmat,alphabet):
+def theoretical_entropy_transition_matrix(p_letter,transmat,alphabet):
     #p1g1 is coincidence
     #p0g1 is failcoincidence
     # print "Transition Matrix:",transmat
@@ -67,8 +69,9 @@ def theoretical_mat_nb(p_letter,transmat,alphabet):
     #p_letter = 1/float(alphabet)
     
     p_letA = numpy.dot(p_letter,transmat.transpose())
-    # print("PA:",p_letA)
-    # print("PB:",p_letter)
+#     print"---------->>"     
+#     print("PA:",p_letA)
+#     print("PB:",p_letter)
     entropy_per_letter = 0.0
     for i in xrange(len(p_letA)):
         if (p_letA[i] > 0):
@@ -191,7 +194,7 @@ def entropy_calculate(
     nb_entropy = 0.0
     
     if (transition_matrix_non_binary!=None):
-        nb_entropy = theoretical_mat_nb(transition_matrix_non_binary,alphabet_size)/nb_bperf
+        nb_entropy = theoretical_entropy_transition_matrix(transition_matrix_non_binary,alphabet_size)/nb_bperf
     else:
         nb_entropy = theoretical_nb(coincidence_rate_non_binary,alphabet_size)/nb_bperf
 
@@ -217,16 +220,16 @@ def entropy_calculate(
     return (ideal_entropy,b_entropy,nb_entropy)
 
 def entropy_calculate2(
-    probability_of_one_in_a=0.05,        #The probability of a photon in a time bin (p1)
-    coincidence_rate_a=0.4,       #The data's heralding efficiency (coincidence rate) (p1 given 1)
-    probability_of_one_in_b=0.05,        #The probability of a photon in a time bin (p1)
-    coincidence_rate_b=0.4,       #The data's heralding efficiency (coincidence rate) (p1 given 1)
-    alph=16,        #The alphabet (frame size used)
-    b_plet=None,    #Probability of each letter
-    b_mat=None,     #Transition matrix for binary code
-    nb_bperf = 64,  #Effective number of original sequence bits per nonbinary letter
-    nb_plet=None,   #nonbinary probability of each letter
-    transition_matrix_non_binary=None     #Transition matrix for nonbinary code
+    probability_of_one_in_a=0.05,       #The probability of a photon in a time bin (p1)
+    coincidence_rate_a=0.4,             #The data's heralding efficiency (coincidence rate) (p1 given 1)
+    probability_of_one_in_b=0.05,       #The probability of a photon in a time bin (p1)
+    coincidence_rate_b=0.4,             #The data's heralding efficiency (coincidence rate) (p1 given 1)
+    alph=16,                            #The alphabet (frame size used)
+    binary_letter_probabilites=None,    #Binary Probability of each letter
+    b_mat=None,                         #Transition matrix for binary code
+    nb_bperf = 64,                      #Effective number of original sequence bits per nonbinary letter
+    nonbinary_letter_probabilities=None,#nonbinary probability of each letter
+    transition_matrix_non_binary=None   #Transition matrix for nonbinary code
     ):
     
     print "\n\nTHEORY:\n\n"
@@ -250,24 +253,29 @@ def entropy_calculate2(
 
 
     print "TOTAL SEQUENCE THEORETICAL ENTROPY:"
-    ideal_entropy = theoretical(probability_of_one_in_a,coincidence_rate_a,probability_of_one_in_a,coincidence_rate_a)
-    ideal_entropy2 = theoretical(probability_of_one_in_b,coincidence_rate_b,probability_of_one_in_b,coincidence_rate_b)
+    ideal_entropy_alice = theoretical(probability_of_one_in_a,coincidence_rate_a,probability_of_one_in_a,coincidence_rate_a)
+    ideal_entropy_bob = theoretical(probability_of_one_in_b,coincidence_rate_b,probability_of_one_in_b,coincidence_rate_b)
     print "\n\nFRAME OCCUPANCY THEORETICAL (APPROX) ENTROPY"
     #Note that the entropy retained is per alphabet bits of the original sequence
-    b_entropy = theoretical_mat_nb(b_plet,b_mat,alph)/alph
+    print "BINARY Letter PROB--->>"
+    print binary_letter_probabilites
+    binary_entropy = theoretical_entropy_transition_matrix(binary_letter_probabilites,b_mat,alph)/alph
 
-    print "\nPercentage of total entropy recovered:",b_entropy/ideal_entropy2
+    print "\nPercentage of total entropy recovered:",binary_entropy/ideal_entropy_bob
 
     print "\n\nFRAME LOCATION THEORETICAL (APPROX) ENTROPY"
     #Note that the entropy retained is for a large amount of original sequence bits
-    nb_entropy = theoretical_mat_nb(nb_plet,transition_matrix_non_binary,alph)/nb_bperf
+    nonbinary_entropy = theoretical_entropy_transition_matrix(nonbinary_letter_probabilities,transition_matrix_non_binary,alph)/nb_bperf
 
-    print "\nPercentage of total entropy recovered:",nb_entropy/ideal_entropy2
+    print "\nPercentage of total entropy recovered:",nonbinary_entropy/ideal_entropy_bob
 
     print "\n\nTOTAL PERCENTAGE OF ENTROPY RETAINED:"
-    print "Theory: %f"%((nb_entropy+b_entropy)/ideal_entropy)
-    print "Theory2:%f"%((nb_entropy+b_entropy)/ideal_entropy2)
+#     print "SHOULD BE LESS THAN ONE AND ARE:"
+#     print "\t %f"%(nonbinary_entropy/ideal_entropy_alice)
+    print "\t %f"%(binary_entropy/ideal_entropy_alice) 
+    print "Theory Alice: %f"%((nonbinary_entropy+binary_entropy)/ideal_entropy_alice)
+    print "Theory Bob:%f"%((nonbinary_entropy+binary_entropy)/ideal_entropy_bob)
     
     print "\n\n"
     
-    return (ideal_entropy,ideal_entropy2,b_entropy,nb_entropy)
+    return (ideal_entropy_alice,ideal_entropy_bob,binary_entropy,nonbinary_entropy)

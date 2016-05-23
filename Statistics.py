@@ -38,7 +38,7 @@ import numpy
 from matplotlib import *
 from multiprocessing import Pool
 from scipy.optimize import curve_fit
-from scipy.misc import factorial
+from scipy.misc import *
 import ttag
 import sys
 from scipy.weave import inline
@@ -415,7 +415,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
     #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,13)):
+    for frame_size in 2**array(range(1,4)):
         print "\n"
         print("DOING ALPHABET",frame_size)
         # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
@@ -531,10 +531,17 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print ("passed if statem") 
         sys.stdout.flush()
         print "calc sw translation matrix"
-        # swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
-        print "finishedcalc sw translation matrix. getting prob"
+        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
 
-        alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size)
+        alice_occ_letter_probabilities = letter_probabilities_using_occupancy(alice_frame_occupancies,frame_size)
+        bob_occ_letter_probabilities = letter_probabilities_using_occupancy(bob_frame_occupancies, frame_size)
+        print "Alice letter prob for real"
+        print alice_occ_letter_probabilities
+        print bob_occ_letter_probabilities
+        
+        
+        print "finishedcalc sw translation matrix. getting prob"
+        print 
         print "have prob"
 
         print "Calucalting Letter Probabilities:"
@@ -549,7 +556,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # print nbtransmat
         maxtag_a = alice[-1]
         # #The total number of original bins is alice, and the final bits is the number of nonbinary left
-        nb_bperf= maxtag_a/len(bob_non_zero_positions_in_frame)
+        nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
         print "Number of original bits per nonbinary:",nb_bperf
 
 
@@ -570,22 +577,22 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print "p1",actual_binary_string_bob_prob_one,multi_p1a
         print "p1g1",multi_p1g1b,multi_p1g1a
         print "Number of original bits per multi:",multi_bperf
-#         entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
-#         multientropy = entropy_left/multi_bperf
+        entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
+        multientropy = entropy_left/multi_bperf
         
         p1_bob = float(len(bob))/bob[-1]
         print ("Getting mutual frame loc")
 
-        mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
-        print "Got bool array"
-        mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
-        print "Converting bool array"
-        entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
-        print ("Opening the file")
-#         (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
+#         mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
+#         print "Got bool array"
+#         mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
+#         print "Converting bool array"
+#         entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
+#         print ("Opening the file")
+        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
         f=open("resultsLaurynas/entropy_1","a")
 
-        # f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(multientropy)+"\n")
-        print "Writing to file"
-        f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
+        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(entropy_left)+"\n")
+#         print "Writing to file"
+#         f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
         f.close()

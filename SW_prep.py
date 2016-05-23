@@ -92,8 +92,9 @@ def errorPercent(mat1,mat2):
 #rather than their probabilities
 #Meaning: letters from mat1 are columns and mat2 are rows
 def transitionNumbers_data(mat1,mat2,alph):
-    lmat1 = zeros((alph,len(mat2)))
+    # overloads memory     
     lmat2 = zeros((len(mat1),alph))
+    lmat1 = zeros((alph,len(mat2)))
     
     for i in xrange(alph):
         lmat1[i,:][mat2==i] = 1
