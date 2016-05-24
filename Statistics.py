@@ -89,9 +89,9 @@ def get_size_of_alphabet(frame_size):
     # generates frame size binary string with 1 (maximum alphabet value) and converts it to integer
     return int('1'*frame_size, 2)
 
-def letter_probabilities(frame_locations, size_of_alphabet):
-    probabilities = zeros(size_of_alphabet)
-    for letter in xrange(size_of_alphabet):
+def letter_probabilities(frame_locations, size_of_alphabet, offset= 0):
+    probabilities = zeros(size_of_alphabet+offset)
+    for letter in xrange(size_of_alphabet+offset):
         # Counts occurences of the particular mapping value (letter) in the frame_locations array
 
         probabilities[letter] = sum(frame_locations == letter)
@@ -198,7 +198,7 @@ def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, f
     for i in range(number_of_timetags):
         mapping_value = 0
         frame_number = frame_numbers[i]
-        mapping_value = (binary_string[i] % frame_size) * (frame_size**(frame_occupancies[frame_number]-1))
+        mapping_value = ((binary_string[i] % frame_size)+1) * (frame_size**(frame_occupancies[frame_number]-1))
         frame_locations[frame_number] += mapping_value
 
     return frame_locations
