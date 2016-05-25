@@ -292,15 +292,45 @@ def entropy_calculate2(
     return (ideal_entropy_alice,ideal_entropy_bob,binary_entropy,nonbinary_entropy)
 def calculate_binary_single_entropy(frame_occupancies, frame_size):
     probability_one = sum(frame_occupancies==1)/float(len(frame_occupancies))
-
     probability_zero = sum(frame_occupancies==0)/float(len(frame_occupancies))
     
-    poisson_factor = probability_one*exp(-probability_one)
-    letter_probability = poisson_factor*probability_one*probability_zero**(frame_size-1)
+    poisson_factor_one = probability_one*exp(-probability_one)
+    poisson_factor_zero = probability_zero*exp(-probability_zero)
+
+    letter_one_probability = poisson_factor_one*probability_one
+    letter_zero_probability = poisson_factor_zero*probability_zero
     
-    binary_single_entropy = -frame_size*(letter_probability*log2(letter_probability))
+    binary_single_entropy = -letter_zero_probability*log2(letter_zero_probability)-letter_one_probability*log2(letter_one_probability)
 
     return binary_single_entropy
+
+def joint_entropy(alice_frame_occupancies,bob_frame_occupancies):
+    probability_one_a = sum(alice_frame_occupancies==1)/float(len(alice_frame_occupancies))
+    probability_zero_a = sum(alice_frame_occupancies==0)/float(len(alice_frame_occupancies))
+    
+    poisson_factor_one_a = probability_one_a*exp(-probability_one_a)
+    poisson_factor_zero_a = probability_zero_a*exp(-probability_zero_a)
+
+    letter_one_probability_a = poisson_factor_one_a*probability_one_a
+    letter_zero_probability_a = poisson_factor_zero_a*probability_zero_a
+# ------Bob
+    probability_one_b = sum(bob_frame_occupancies==1)/float(len(bob_frame_occupancies))
+    probability_zero_b = sum(bob_frame_occupancies==0)/float(len(bob_frame_occupancies))
+    
+    poisson_factor_one_b = probability_one_b*exp(-probability_one_b)
+    poisson_factor_zero_b = probability_zero_b*exp(-probability_zero_b)
+
+    letter_one_probability_b = poisson_factor_one_b*probability_one_b
+    letter_zero_probability_b = poisson_factor_zero_b*probability_zero_b
+
+    alice_probs = array([letter_zero_probability_a,letter_one_probability_a])
+    bob_probs = array([letter_zero_probability_b,letter_one_probability_b])
+    entropy = 0.0
+
+    for alice in alice_probs:
+        for bob in bob_probs:
+            entropy -=alice*bob*log2(alice*bob)
+    return entropy
 
 def shared_entropy():
     pass
