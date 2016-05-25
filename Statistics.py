@@ -51,7 +51,7 @@ from itertools import *
 
 #Assumes that the person's data is ordered
 
-def create_binary_string_from_laser_pulses(timetags, binsize = 263.15, relative_unit = 78.125):
+def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_unit = 78.125):
 
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
     BINSIZE = around(binsize/relative_unit)
@@ -358,25 +358,6 @@ def prep():
     return (alice,bob,alice_pol,bob_pol)
 
 
-def saveprep(fname,alice,bob,alice_pol,bob_pol):
-    print("Saving Data Arrays")
-    sys.stdout.flush()
-    save("./results/results/alice_"+fname+".npy",alice)
-    save("./results/results/bob_"+fname+".npy",bob)
-    save("./results/results/alice_pol_"+fname+".npy",alice_pol)
-    save("./results/results/bob_pol_"+fname+".npy",bob_pol)
-
-def loadprep(fname):
-    print("Loading Alice and Bob arrays")
-
-    sys.stdout.flush()
-    alice = load("./resultsLaurynas/aliceTtags_"+fname+".npy")
-    bob = load("./resultsLaurynas/bobTtags_"+fname+".npy")
-    alice_pol=load("./resultsLaurynas/aliceChannels_"+fname+".npy")
-    bob_pol = load("./resultsLaurynas/bobChannels_"+fname+".npy")
-
-    return (alice,bob,alice_pol,bob_pol)
-
 def resequence1(location_value,frame_size,occupancy,actual_binary_string_bool=None,frame_offset=0):
     # Larry: Nonsense... actual_binary_string_bool size == timetag size (why'd you create size of alphabet??)
     # if (actual_binary_string_bool==None):
@@ -512,6 +493,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         else:
             multi_p1g1a = mutual_binary_string_bool/float(1)
 
+        maxtag_a = alice[-1]
         multi_bperf = maxtag_a/float(len(actual_binary_string_bool_bob))
         print "MULTI"
         print "Length:",len(actual_binary_string_bool_bob)
@@ -530,8 +512,6 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 #         mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
 #         print "Converting bool array"
 #         entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
-
-        maxtag_a = alice[-1]
 #=======================ENTROPY2 PARAMETERS=======================================================
         same_timetags_for_both = intersect1d(alice,bob)    
 
