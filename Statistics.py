@@ -396,7 +396,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
 #================FOR LOOP STARTS======================================================================================================================
-    for frame_size in 2**array(range(1,9)):
+    for frame_size in 2**array(range(1,10)):
         print "\n"
         print("DOING ALPHABET",frame_size)
 
@@ -404,6 +404,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print "Calculating frame occupancies..."
         alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
         bob_frame_occupancies   = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
+        print "BINARY SINGLE ENTROPY: \n\t",calculate_binary_single_entropy(alice_frame_occupancies, frame_size),"\n\t",calculate_binary_single_entropy(bob_frame_occupancies,frame_size)
+
         print("Calculating frame locations...")
         # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)

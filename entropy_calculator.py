@@ -290,7 +290,20 @@ def entropy_calculate2(
 #     print "\n\n"
     
     return (ideal_entropy_alice,ideal_entropy_bob,binary_entropy,nonbinary_entropy)
+def calculate_binary_single_entropy(frame_occupancies, frame_size):
+    probability_one = sum(frame_occupancies==1)/float(len(frame_occupancies))
 
+    probability_zero = sum(frame_occupancies==0)/float(len(frame_occupancies))
+    
+    poisson_factor = probability_one*exp(-probability_one)
+    letter_probability = poisson_factor*probability_one*probability_zero**(frame_size-1)
+    
+    binary_single_entropy = -frame_size*(letter_probability*log2(letter_probability))
+
+    return binary_single_entropy
+
+def shared_entropy():
+    pass
 def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
     entropy = 0.0
     frame_occupancies_alice = calculate_frame_occupancy(binary_string_alice, frame_size)
