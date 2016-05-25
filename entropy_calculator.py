@@ -70,6 +70,8 @@ def theoretical_entropy_transition_matrix(p_letter,transmat,alphabet):
     #p_letter = 1/float(alphabet)
     
     p_letA = numpy.dot(p_letter,transmat.transpose())
+#     print transmat
+#     print "letTTER PROBS:",p_letA,p_letter
 #     print"---------->>"     
 #     print("PA:",p_letA)
 #     print("PB:",p_letter)
@@ -80,7 +82,9 @@ def theoretical_entropy_transition_matrix(p_letter,transmat,alphabet):
     print "\nEntropy Per Letter:",entropy_per_letter
     
     entropy_s2gs1 = 0.0
+    # Takes first COLUMN length     
     for i in xrange(len(transmat[:,0])):
+        # Takes first ROW length       
         for j in xrange(len(transmat[0,:])):
             if (transmat[i,j] > 0.0 and p_letter[j] > 0.0):
                 entropy_s2gs1 -= p_letter[j]*transmat[i,j]*log2(transmat[i,j])
@@ -176,6 +180,7 @@ def entropy_calculate(
     nb_bperf = 64,                       #Effective number of original sequence bits per nonbinary letter
     b_test = 1.0,                        #Percentage sent in parities
     nb_test = 0.8,                       #Percentage sent in parities nonbinary
+    nbpl =None,
     transition_matrix_non_binary=None    #Transition matrix for nonbinary code
     ):
 
@@ -194,11 +199,11 @@ def entropy_calculate(
     #Note that the entropy retained is for a large amount of original sequence bits
     nb_entropy = 0.0
     
-    if (transition_matrix_non_binary!=None):
-        nb_entropy = theoretical_entropy_transition_matrix(transition_matrix_non_binary,alphabet_size)/nb_bperf
-    else:
-        nb_entropy = theoretical_nb(coincidence_rate_non_binary,alphabet_size)/nb_bperf
-
+#     if (transition_matrix_non_binary!=None):
+    nb_entropy = theoretical_entropy_transition_matrix(nbpl,transition_matrix_non_binary,alphabet_size)/nb_bperf
+#     else:
+#     nb_entropy = theoretical_nb(coincidence_rate_non_binary,alphabet_size)/nb_bperf
+    print "NON BINARy-->>>>",nb_entropy
     print "\nPercentage of total entropy recovered:",nb_entropy/ideal_entropy
 
     #These are calculations of entropy retained for the actual codes
@@ -252,6 +257,7 @@ def entropy_calculate2(
 
     #nb_testparity = 540/1000.0      #Parities I need to send in non-binary code divided by total number of non-parity letters
 
+    print "NON BINARY LOCATION ENTROPY: ", theoretical_nb(coincidence_rate_a, alph)
 
     print "TOTAL SEQUENCE THEORETICAL ENTROPY:"
     ideal_entropy_alice = theoretical(probability_of_one_in_a,coincidence_rate_a,probability_of_one_in_a,coincidence_rate_a)
@@ -260,20 +266,21 @@ def entropy_calculate2(
     print "\n\nFRAME OCCUPANCY THEORETICAL (APPROX) ENTROPY"
     #Note that the entropy retained is per alphabet bits of the original sequence
     # print "BINARY Letter PROB--->>"
-    # print "Alice binary_letter_probabilites "binary_letter_probabilites
+#     print "Alice binary_letter_probabilites ",binary_letter_probabilites
     binary_entropy = theoretical_entropy_transition_matrix(binary_letter_probabilites,b_mat,alph)/alph
     print "Alice Binary_entropy",binary_entropy
-    print "\nPercentage of total entropy recovered:",binary_entropy/ideal_entropy_alice
+#     print "\nPercentage of total entropy recovered:",binary_entropy/ideal_entropy_alice
 
     print "\n\nFRAME LOCATION THEORETICAL (APPROX) ENTROPY"
 #     #Note that the entropy retained is for a large amount of original sequence bits
-    print "nonbinary letter probabilities:", nonbinary_letter_probabilities
-    print transition_matrix_non_binary
-#     nonbinary_entropy = theoretical_entropy_transition_matrix(nonbinary_letter_probabilities,transition_matrix_non_binary,alph)/nb_bperf
+#     print "nonbinary letter probabilities:", nonbinary_letter_probabilities
+    
+#     print "transition matrix for locations",transition_matrix_non_binary
+    nonbinary_entropy = theoretical_entropy_transition_matrix(nonbinary_letter_probabilities,transition_matrix_non_binary,alph)/nb_bperf
 
 #     print "\nPercentage of total entropy recovered:",nonbinary_entropy/ideal_entropy_bob
 
-#     print "\n\nTOTAL PERCENTAGE OF ENTROPY RETAINED:"
+    print "\n\nTOTAL PERCENTAGE OF ENTROPY RETAINED:"
 # #     print "SHOULD BE LESS THAN ONE AND ARE:"
 # #     print "\t %f"%(nonbinary_entropy/ideal_entropy_alice)
 #     print "\t %f"%(binary_entropy/ideal_entropy_alice) 
@@ -282,7 +289,7 @@ def entropy_calculate2(
     
 #     print "\n\n"
     
-#     return (ideal_entropy_alice,ideal_entropy_bob,binary_entropy,nonbinary_entropy)
+    return (ideal_entropy_alice,ideal_entropy_bob,binary_entropy,nonbinary_entropy)
 
 def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
     entropy = 0.0
@@ -294,15 +301,17 @@ def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
 
     print "Frame occupancies alice",frame_occupancies_alice
     print "Frame locations alice", frame_locations_alice
-
+    print "Frame occupancies bob",frame_occupancies_bob
+    print "Frame locations bob", frame_locations_bob
+    
     loc_letter_probabilities_alice = letter_probabilities(frame_locations_alice, frame_size, 1)
     loc_letter_probabilities_bob = letter_probabilities(frame_locations_bob, frame_size, 1)
 
-    occ_letter_probabilities_alice = letter_probabilities(frame_occupancies_alice, frame_size)
-    occ_letter_probabilities_bob = letter_probabilities(frame_occupancies_bob, frame_size)
+    occ_letter_probabilities_alice = letter_probabilities(frame_occupancies_alice, frame_size,1)
+    occ_letter_probabilities_bob = letter_probabilities(frame_occupancies_bob, frame_size,1)
     
-    print "loc letter probabilities", loc_letter_probabilities_alice
-    print "occ letter probabilities", occ_letter_probabilities_alice
+#     print "loc letter probabilities", loc_letter_probabilities_alice
+#     print "occ letter probabilities", occ_letter_probabilities_alice
 
     fl_entropy_alice = calculate_frame_entropy(frame_locations_alice, frame_size)
     fl_entropy_bob = calculate_frame_entropy(frame_locations_bob, frame_size)
@@ -315,10 +324,13 @@ def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
 
 
     total_c = intersect1d(binary_string_alice, binary_string_bob)
-    p1g1b = float(len(total_c))/len(binary_string_bob)
+    
     p1a = float(len(binary_string_alice))/binary_string_alice[-1]
     p1g1a = float(len(total_c))/len(binary_string_alice)
+        
     p1b = float(len(binary_string_bob))/binary_string_bob[-1]
+    p1g1b = float(len(total_c))/len(binary_string_bob)
+
     print "\nTheory\n"
     theoretical(p1a, p1g1a, p1b, p1g1b)
     print "\n"
@@ -329,13 +341,15 @@ def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
     alice_non_zero_positions_in_frame = frame_locations_alice[mutual_frames_with_occupancy_one]
     bob_non_zero_positions_in_frame   = frame_locations_bob[mutual_frames_with_occupancy_one]
 #     mutual_occ_letter_probabilities = letter_probabilities(alice_non_zero_positions_in_frame, frame_size)
-    
+#     print alice_non_zero_positions_in_frame
     nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
-    nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size)
+    nbpl = letter_probabilities(bob_non_zero_positions_in_frame,frame_size, 1)
+#     print "non zero pos",alice_non_zero_positions_in_frame
     nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
     swtransmat = transitionMatrix_data2(frame_occupancies_alice,frame_occupancies_bob,frame_size)
 
-    print swtransmat
-    entropy_calculate2(p1a,p1g1a,p1b,p1g1b,frame_size,occ_letter_probabilities_alice,swtransmat,64,loc_letter_probabilities_alice,nbtransmat)
+#     print swtransmat
+#     print "-->>", occ_letter_probabilities_bob
+    entropy_calculate2(p1a,p1g1a,p1b,p1g1b,frame_size,occ_letter_probabilities_alice,swtransmat,nb_bperf,nbpl,nbtransmat)
     
 

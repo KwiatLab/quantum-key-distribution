@@ -20,10 +20,10 @@ def loadprep(fname):
     # print("Loading Alice and Bob arrays")
 
     sys.stdout.flush()
-    alice = load("./resultsLaurynas/resultsLaurynas/aliceTtags_"+fname+"_full.npy")
-    bob = load("./resultsLaurynas/resultsLaurynas/bobTtags_"+fname+"_full.npy")
-    alice_pol=load("./resultsLaurynas/resultsLaurynas/aliceChannels_"+fname+"_full.npy")
-    bob_pol = load("./resultsLaurynas/resultsLaurynas/bobChannels_"+fname+"_full.npy")
+    alice = load("./resultsLaurynas/resultsLaurynas/aliceTtags_"+fname+".npy")
+    bob = load("./resultsLaurynas/resultsLaurynas/bobTtags_"+fname+".npy")
+    alice_pol=load("./resultsLaurynas/resultsLaurynas/aliceChannels_"+fname+".npy")
+    bob_pol = load("./resultsLaurynas/resultsLaurynas/bobChannels_"+fname+".npy")
 
     return (alice,bob,alice_pol,bob_pol)
 

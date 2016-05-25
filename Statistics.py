@@ -138,7 +138,7 @@ def calculate_frame_entropy_using_occupancy(frame_occupancies, frame_size):
 def calculate_frame_entropy(frame_locations, frame_size):
     entropy = 0
     size_of_alphabet = get_size_of_alphabet(frame_size) + 1 
-    probabilities = letter_probabilities(frame_locations, size_of_alphabet)
+    probabilities = letter_probabilities(frame_locations, size_of_alphabet, 1)
     for i in xrange(size_of_alphabet):
         entropy += probabilities[i]*log2_modified(probabilities[i])
     return entropy*(-1)
@@ -414,48 +414,33 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
-    #Create the LDPC arrays (range 1-13)
-    for frame_size in 2**array(range(1,4)):
+#================FOR LOOP STARTS======================================================================================================================
+    for frame_size in 2**array(range(1,9)):
         print "\n"
         print("DOING ALPHABET",frame_size)
-        # totlen = 8000000#min(max(int(alice[-1]/16),int(bob[-1]/16)),500000000)
-        print("Extracting Data")
-        
-        # can test frame_location algorithm with following line
-        # print calculate_frame_locations(array([0,1,2,3,4,5,6,7,8,9,10,11,12]), array([4,4,4,1]), 4)
 
-        # Old implementation
-        # (bob_frame_occupancies,bob_frame_locations,bob_p,maxtag_b) = createLDPCdata(bob,bob_pol,total_number_of_frames = totlen,frame_size=frame_size)
-
+#======================PROCESSING DATA=========================================================
         print "Calculating frame occupancies..."
         alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
         bob_frame_occupancies   = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
-
         print("Calculating frame locations...")
-
         # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
         # print "Entropy using frame mapping: "
         # print calculate_frame_entropy(alice_frame_locations, frame_size)
 
-
         # not binary mapping_value but calculates way faster
+        print "Making datasets equal..."
         alice_frame_locations = calculate_frame_locations_daniels_mapping(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         bob_frame_locations   = calculate_frame_locations_daniels_mapping(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-
         (alice_frame_occupancies,bob_frame_occupancies) = make_data_string_same_size(alice_frame_occupancies,bob_frame_occupancies)
         (alice_frame_locations,bob_frame_locations) = make_data_string_same_size(alice_frame_locations,bob_frame_locations)
-        print ("Making data sizes the same for both Bob and Alice...All equal? ", len(alice_frame_occupancies)
-                                                                                 ==len(bob_frame_occupancies)
-                                                                                 ==len(alice_frame_locations)
-                                                                                 ==len(bob_frame_locations))
-
-        print "Entropy using frame occupancy: ", calculate_frame_entropy_using_occupancy(alice_frame_occupancies, frame_size)
-
-
+ 
+#===============================================================================================
+        
         sys.stdout.flush()
-    
-        # ------------------------DEALS WITH OCCUPANCIES > 1 ------------------------------------------------------------
+
+#==================DEALS WITH OCCUPANCIES > 1===================================================
         # #2-1,2-2,etc:
         # calculates where at least one of them has higher occupancy than one
         occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
@@ -469,9 +454,10 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 
         actual_binary_string_bool_bob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
         actual_binary_string_bool_alice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
-        #-----------------------------------------------------------------------------------------------------------------
 
-        # #1-1,etc
+#===============================================================================================
+
+#===================DEALS WITH OCCUPANCIES == 1==================================================
 
         mutual_frames_with_occupancy_one = logical_and(alice_frame_occupancies==1,bob_frame_occupancies==1)
     
@@ -481,26 +467,20 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # ------------------Polarizations of nonzero elements ------------------------------------------------------------
         # alice_pf = alice_p[mutual_frames_with_occupancy_one]
         # bob_pf = bob_p[mutual_frames_with_occupancy_one]
+        # graphs.polarizationPlot(alice_pf,bob_pf)
         # ----------------------------------------------------------------------------------------------------------------
 
         print "Alice and Bob frame location DATA saved for LDPC procedure."
         # fmt="%i" saves signed decimal integers
-        # sample should look like for frame size 4:
-        #   ALICE: [0,1,2,2,3]
-        #   BOB:   [0,1,2,2,4] <-- error in last element 
-        # saves the last one frame size
         savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
 
-        # #graphs.polarizationPlot(alice_pf,bob_pf)
-
-        #Extract code statistics
-
+#==================CODE STATISTICS=================================================================================================
 
         print "->Code statistics: "
         sys.stdout.flush()
     
         print "Frame Occupancy: "
-        print "\tLength:",len(bob_frame_occupancies)
+        print "\tLength:",len(alice_frame_occupancies)
         occ_number_of_coincidences = sum(bob_frame_occupancies==alice_frame_occupancies)
         occ_coincidence_fraction = float(occ_number_of_coincidences)/len(bob_frame_occupancies)
         print "\tNumber of coincidences:",occ_number_of_coincidences," with fraction of: ",occ_coincidence_fraction
@@ -514,85 +494,69 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print "\tError:",1-loc_coincidence_fraction
 
 
-
-        # The probability of a 1 in the original-original sequence
-        p1 = float(len(alice))/alice[-1]
-        print "probability of 1 for Alice:",p1," and Bob: ",float(len(bob))/bob[-1]
-    
-        same_timetags_for_both = intersect1d(alice,bob)
-        p1g1 = float(len(same_timetags_for_both))/len(alice)
-        print "Coincidence rate (p1g1) for Alice: ",p1g1," and Bob: ",float(len(same_timetags_for_both))/len(bob)
-
         if (any(alice_frame_occupancies > frame_size) or any(bob_frame_occupancies > frame_size)):
-            # NOTE: would be better just to raise the error and terminate the process rather than artificially modify data
             print "WARNING: Over the TOP!"
-            alice_frame_occupancies[alice_frame_occupancies >= frame_size]=frame_size-1
-            bob_frame_occupancies[bob_frame_occupancies >= frame_size]=frame_size-1
-        print ("passed if statem") 
+
         sys.stdout.flush()
-        print "calc sw translation matrix"
-        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
 
-        alice_occ_letter_probabilities = letter_probabilities_using_occupancy(alice_frame_occupancies,frame_size)
-        bob_occ_letter_probabilities = letter_probabilities_using_occupancy(bob_frame_occupancies, frame_size)
-        print "Alice letter prob for real"
-        print alice_occ_letter_probabilities
-        print bob_occ_letter_probabilities
-        
-        
-        print "finishedcalc sw translation matrix. getting prob"
-        print 
-        print "have prob"
+#==================2-x theory====================================================================================================
 
-        print "Calucalting Letter Probabilities:"
-        # print alice_occ_letter_probabilities
-        print "Calculating Transition Matrix (SW):"
-        # print swtransmat
-        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
-        nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size)
-        print "Calculating Letter Probabilities:"
-        # print nbpl
-        print "Calculating Transition Matrix (NB):"
-        # print nbtransmat
-        maxtag_a = alice[-1]
-        # #The total number of original bins is alice, and the final bits is the number of nonbinary left
-        nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
-        print "Number of original bits per nonbinary:",nb_bperf
-
-
-        # #2-x theory
         mutual_binary_string_bool = float(sum(logical_and(actual_binary_string_bool_alice,actual_binary_string_bool_bob)))
         actual_binary_string_bob_prob_one = float(sum(actual_binary_string_bool_bob))/float(len(actual_binary_string_bool_bob))
+
         multi_p1g1b = mutual_binary_string_bool/float(sum(actual_binary_string_bool_bob))
         multi_p1a = float(sum(actual_binary_string_bool_alice))/float(len(actual_binary_string_bool_alice))
+
         if(sum(actual_binary_string_bool_alice)!=0):
             multi_p1g1a = mutual_binary_string_bool/float(sum(actual_binary_string_bool_alice))
         else:
             multi_p1g1a = mutual_binary_string_bool/float(1)
+
         multi_bperf = maxtag_a/float(len(actual_binary_string_bool_bob))
         print "MULTI"
         print "Length:",len(actual_binary_string_bool_bob)
-        print "Ones:",sum(actual_binary_string_bool_bob),sum(actual_binary_string_bool_alice)
-        print "Coincidences",mutual_binary_string_bool
+        print "Ones in Alice:",sum(actual_binary_string_bool_alice),"Bob:",sum(actual_binary_string_bool_bob)
+        # print "Coincidences",mutual_binary_string_bool
         print "p1",actual_binary_string_bob_prob_one,multi_p1a
         print "p1g1",multi_p1g1b,multi_p1g1a
         print "Number of original bits per multi:",multi_bperf
         entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
         multientropy = entropy_left/multi_bperf
-        
-        p1_bob = float(len(bob))/bob[-1]
-        print ("Getting mutual frame loc")
-
+#===============================================================================================================================
+ 
+        coincidence_rate_non_binary = sum(alice_non_zero_positions_in_frame == bob_non_zero_positions_in_frame)/len(alice_non_zero_positions_in_frame)
 #         mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
 #         print "Got bool array"
 #         mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
 #         print "Converting bool array"
 #         entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
-#         print ("Opening the file")
-        (te,te2,be,nbe)=entropy_calculate2(p1,p1g1,p1_bob,p1g1,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
+
+        maxtag_a = alice[-1]
+#=======================ENTROPY2 PARAMETERS=======================================================
+        same_timetags_for_both = intersect1d(alice,bob)    
+
+        p1a = float(len(alice))/alice[-1]
+        p1b = float(len(bob))/bob[-1] 
+
+        p1g1a = float(len(same_timetags_for_both))/len(alice)
+        p1g1b = float(len(same_timetags_for_both))/len(bob)
+
+        alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size, 1)
+        bob_occ_letter_probabilities = letter_probabilities(bob_frame_occupancies, frame_size, 1)
+
+        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+        nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
+        nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size,1)
+        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
+
+#================================================================================================
+
+
+#         (te,te2,be,nbe)=entropy_calculate2(p1a,p1g1a,p1b,p1g1b,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
+        print (entropy_calculate(p1a, p1g1a, p1b, p1g1b, frame_size, 0.05, 0.85, 0.05, 0.85,coincidence_rate_non_binary, nb_bperf, 1.0, 0.8,nbpl, nbtransmat))
         f=open("resultsLaurynas/entropy_1","a")
 
-        f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(entropy_left)+"\n")
+#         f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(entropy_left)+"\n")
 #         print "Writing to file"
 #         f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
         f.close()

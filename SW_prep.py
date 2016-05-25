@@ -66,7 +66,7 @@ def normalizecol(mat):
     colsum= sum(res,0)
     # Do I want to check zero?     
     if (any(colsum<=0.0) or any(colsum >= Inf)):
-        print "Failed normalizecol:",colsum
+#         print "Failed normalizecol:",colsum
         colsum[colsum<=0.0]=1.0
     
     #Divide every entry by the necessary value to normalize
@@ -102,9 +102,9 @@ def transitionNumbers_data(mat1,mat2,alph):
     return dot(lmat1,lmat2)
 
 def transitionNumbers_data2(mat1,mat2,alph):
-    rmat=zeros((alph,alph))
+    rmat=zeros((alph+1,alph+1))
     datalen=int(len(mat1))
-    alph=int(alph)
+    alph=int(alph+1)
     code="""
         long long i = 0;
         for (;i<datalen;i++) {
