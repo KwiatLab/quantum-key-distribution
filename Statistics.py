@@ -195,10 +195,13 @@ def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, f
     frame_numbers = binary_string.copy()
     frame_numbers /= frame_size
 
-    for i in range(number_of_timetags):
+    for i in xrange(number_of_timetags):
         mapping_value = 0
         frame_number = frame_numbers[i]
-        mapping_value = ((binary_string[i] % frame_size)+1) * (frame_size**(frame_occupancies[frame_number]-1))
+        # old mapping: mapping_value = ((binary_string[i] % frame_size)+1) * power(frame_size,(frame_occupancies[frame_number]-1)) 
+        # position + (occupancy-1)(frame_size)               
+        mapping_value = ((binary_string[i] % frame_size)+1) + pow((frame_size*(frame_occupancies[frame_number]-1)),1/(frame_occupancies[frame_number]))
+#         print frame_occupancies[frame_number],"\tmap",mapping_value
         frame_locations[frame_number] += mapping_value
 
     return frame_locations
@@ -395,8 +398,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
 
-#================FOR LOOP STARTS======================================================================================================================
-    for frame_size in 2**array(range(1,9)):
+#================FOR LOOP STARTS (recommended to go 1-13======================================================================================================================
+    for frame_size in 2**array(range(1,13)):
         print "\n"
         print("DOING ALPHABET",frame_size)
 

@@ -307,7 +307,7 @@ def calculate_binary_single_entropy(frame_occupancies, frame_size):
 def joint_entropy(alice_frame_occupancies,bob_frame_occupancies):
     probability_one_a = sum(alice_frame_occupancies==1)/float(len(alice_frame_occupancies))
     probability_zero_a = sum(alice_frame_occupancies==0)/float(len(alice_frame_occupancies))
-    
+    probability_multi_a = sum(alice_frame_occupancies>1)/float(len(alice_frame_occupancies))
     poisson_factor_one_a = probability_one_a*exp(-probability_one_a)
     poisson_factor_zero_a = probability_zero_a*exp(-probability_zero_a)
 
@@ -316,6 +316,11 @@ def joint_entropy(alice_frame_occupancies,bob_frame_occupancies):
 # ------Bob
     probability_one_b = sum(bob_frame_occupancies==1)/float(len(bob_frame_occupancies))
     probability_zero_b = sum(bob_frame_occupancies==0)/float(len(bob_frame_occupancies))
+
+    print "\n\t\t\t Fraction of ones", probability_one_a
+    print "\n\t\t\t Fraction of zeros", probability_zero_a
+    print "\n\t\t\t Fraction of multi", probability_multi_a
+    print "\n\t\t\t TOTAL", probability_zero_a+probability_one_a+probability_multi_a
     
     poisson_factor_one_b = probability_one_b*exp(-probability_one_b)
     poisson_factor_zero_b = probability_zero_b*exp(-probability_zero_b)
