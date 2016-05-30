@@ -315,19 +315,18 @@ def joint_entropy(alice_frame_occupancies,bob_frame_occupancies):
     letter_zero_probability_a = poisson_factor_zero_a*probability_zero_a
 # ------Bob
     probability_one_b = sum(bob_frame_occupancies==1)/float(len(bob_frame_occupancies))
-    probability_zero_b = sum(bob_frame_occupancies==0)/float(len(bob_frame_occupancies))
-
-    print "\n\t\t\t Fraction of ones", probability_one_a
-    print "\n\t\t\t Fraction of zeros", probability_zero_a
-    print "\n\t\t\t Fraction of multi", probability_multi_a
-    print "\n\t\t\t TOTAL", probability_zero_a+probability_one_a+probability_multi_a
-    
+    probability_zero_b = sum(bob_frame_occupancies==0)/float(len(bob_frame_occupancies))   
     poisson_factor_one_b = probability_one_b*exp(-probability_one_b)
     poisson_factor_zero_b = probability_zero_b*exp(-probability_zero_b)
 
     letter_one_probability_b = poisson_factor_one_b*probability_one_b
     letter_zero_probability_b = poisson_factor_zero_b*probability_zero_b
-
+ 
+    print "\n\t\t\t Fraction of ones", probability_one_a
+    print "\n\t\t\t Fraction of zeros", probability_zero_a
+    print "\n\t\t\t Fraction of multi", probability_multi_a
+    print "\n\t\t\t TOTAL", probability_zero_a+probability_one_a+probability_multi_a
+ 
     alice_probs = array([letter_zero_probability_a,letter_one_probability_a])
     bob_probs = array([letter_zero_probability_b,letter_one_probability_b])
     entropy = 0.0
@@ -337,8 +336,9 @@ def joint_entropy(alice_frame_occupancies,bob_frame_occupancies):
             entropy -=alice*bob*log2(alice*bob)
     return entropy
 
-def shared_entropy():
-    pass
+def shared_entropy(binary_entropy_alice, binary_entropy_bob, joint_entropy):
+    return binary_entropy_alice+binary_entropy_bob-joint_entropy
+
 def entropy_calc(binary_string_alice,binary_string_bob, frame_size):
     entropy = 0.0
     frame_occupancies_alice = calculate_frame_occupancy(binary_string_alice, frame_size)

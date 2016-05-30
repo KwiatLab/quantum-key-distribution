@@ -43,10 +43,8 @@ def sequenceProbMatrix(seq,trans):
     res = zeros((trans.shape[0],len(seq)))
     
     for i in xrange(len(seq)):
-        print "-->>col",trans[:,seq[i]][i], "--> ",len(res[:,i])
-        print "===>>", res[:,i]
-        
-        res[:,i]=trans[:,seq[i]][i]
+        # takes every column and assigns transmat columns          
+        res[:,i]=trans[:,seq[i]]
     
     return res
 

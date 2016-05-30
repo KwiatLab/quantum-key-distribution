@@ -15,7 +15,7 @@ get good codes running, which will later run on a GPU.
 #Imports the necessary calculational modules
 from numpy import *
 from numpy.fft import *
-from scipy.sparse import *
+from scipy.sparse import lil_matrix
 
 #ENCODE:
 #Given a sparse parityMatrix, the array of inputs, and their alphabet
@@ -24,7 +24,6 @@ from scipy.sparse import *
 def encode(parityMatrix, inputbits, alphabet):
     #The parityMatrix has the same width as inputbits,
     #so all that really needs to be done is matrix multiplication: parityMatrix * inputbits
-    print parityMatrix
     return (parityMatrix.dot(inputbits)%alphabet).astype(uint16)
     
 #CHECK
@@ -86,13 +85,13 @@ class sw_math(object):
             res[:,i+1]=self.convolute(left[:,i],right[:,i+1])
         return res
     
-    def parityProbabilities_conv(self,mat,syn):
+    def parityProbabilities_conv(self,mat,syndromes):
         #Do the definition versino of probability finding
         convresult = self.convcol(mat)
         
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
-        res = roll(flipud(convresult),1+syn,0)
+        res = roll(flipud(convresult),1+syndromes,0)
     
         #Normalize the result and return 
         return self.normalizecol(res)
@@ -398,7 +397,7 @@ class sw_math(object):
     #The parity check's calculational code is:
     #roll(flipud(ifftcol(mulcol(fftcol(matrix of bit probabilities)))),1+syndrome value,0)
     
-    def parityProbabilities_mul(self,mat,syn):
+    def parityProbabilities_mul(self,mat,syndromes):
             
         #To do the convolutions, in order to find the probabilities given all the bits, we use
         #an FFT, which allows it to be done faster for all the bits at once
@@ -406,7 +405,7 @@ class sw_math(object):
         
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
-        res = roll(flipud(convresult),1+syn,0)
+        res = roll(flipud(convresult),1+syndromes,0)
         
         #Normalize the result and return 
         #TODO: Interestingly, it seems like the normalize might not be necessary
@@ -415,14 +414,14 @@ class sw_math(object):
     
     #This does EXACTLY the same thing as the before block, except instead of multiplying
     # it does log addition
-    def parityProbabilities_log(self,mat,syn):
+    def parityProbabilities_log(self,mat,syndromes):
         #To do the convolutions, in order to find the probabilities given all the bits, we use
         #an FFT, which allows it to be done faster for all the bits at once
         convresult = self.ifftcol(self.l2p(self.addcol(self.p2l(self.fftcol(mat)))))
         
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
-        res = roll(flipud(convresult),1+syn,0)
+        res = roll(flipud(convresult),1+syndromes,0)
         
         #Make sure that there are no fail 0s
         #res[res<=0.00]=1E-17
@@ -431,8 +430,8 @@ class sw_math(object):
         return self.normalizecol(res)
     
     
-    def parityProbabilities(self,mat,syn):
-        return self.parityProbabilities_mul(mat,syn)
+    def parityProbabilities(self,mat,syndromes):
+        return self.parityProbabilities_mul(mat,syndromes)
     
     #BITPROBABILITIES
     #Given a node with A possible discrete states (read: alphabet of A), with prior probability
@@ -499,14 +498,14 @@ class sw_mathc(sw_math):
         
         return res
     
-    def parityProbabilities_mul(self,mat,syn):
+    def parityProbabilities_mul(self,mat,syndromes):
         
         #This code fixes the fringe case of a check having either no bits or one bit
         if (mat.shape[1]==0):
             return mat
         elif (mat.shape[1]==1):
             res = zeros(mat.shape)
-            res[syn,0]= 1.0
+            res[syndromes,0]= 1.0
             return res        
         
         #To do the convolutions, in order to find the probabilities given all the bits, we use
@@ -515,7 +514,7 @@ class sw_mathc(sw_math):
         
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
-        res = roll(flipud(convresult),1+syn,0)
+        res = roll(flipud(convresult),1+syndromes,0)
         
         #Replace zeros with the given value
         #res[res<=0.00]=self.zeroReplace
@@ -527,14 +526,14 @@ class sw_mathc(sw_math):
         
     #This does EXACTLY the same thing as the before block, except instead of multiplying
     # it does log addition
-    def parityProbabilities_log(self,mat,syn):
+    def parityProbabilities_log(self,mat,syndromes):
         #To do the convolutions, in order to find the probabilities given all the bits, we use
         #an FFT, which allows it to be done faster for all the bits at once
         convresult = self.ifftcol(self.l2p(self.addcol(self.p2l(self.fftcol(mat)))))
         
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
-        res = roll(flipud(convresult),1+syn,0)
+        res = roll(flipud(convresult),1+syndromes,0)
         
         #Make sure that there are no fail 0s
         #res[res<=0.00]=zeroReplace
@@ -560,18 +559,22 @@ class swnb_node(sw_mathc):
     #Appends the given connection
     def addConnection(self,conn):
         self.connections.append(conn)
+#         print "connections: ",self.connections
     
     #Prepare the object for actual propagation. This needs to be called before running belief propagation,
     #and after connecting all of the nodes together into the graph structure
     def prepare(self,alphabet):
+#         print "node:",self
+        
+        print type(self),"Number of connections",len(self.connections)
         if (len(self.connections)==0):
-            self.err("WARNING: Node not connected!")
+            self.err("\t\t\t\t\t WARNING: Node not connected!")
         #elif (len(self.connections)<2):
         #    print "Warning: Node has <2 connections!"
         self.inputMatrix = ones((alphabet,len(self.connections)))
     
     #Recieve recieves the conditional probability of the given node according to the object
-    def receive(self,obj,prob):
+    def     receive(self,obj,prob):
         self.inputMatrix[:,self.connections.index(obj)] = prob
     
     def runAlgorithm(self):
@@ -737,6 +740,7 @@ class SW_LDPC(object):
         self.parityMatrix = parityMatrix
         self.syndromeValues = syndromes
         self.alphabet = data_probability_matrix.shape[0] #The probability matrix's column size is the alphabet
+        print "Alphabet",self.alphabet
         self.correctResult = original
         self.verbose = verbose
         
@@ -791,13 +795,18 @@ class SW_LDPC(object):
     #Set the decoding mechanism up, connect all of the bitnodes to checknodes in the correct way and prepare to decode
     def prepare(self, prior_probability_matrix):
         #Set up the necessary arrays
-        self.bits = [None]*self.parityMatrix.shape[1]
-        self.checks = [None]*self.parityMatrix.shape[0]
+        bits_length = self.parityMatrix.shape[1]
+        #bits have length of big number (iterate with value 40000)         
+        self.bits = [None]*bits_length
+        #checks have length of alice_sw length (length of dataset)
+        dataset_length = self.parityMatrix.shape[0]         
+        self.checks = [None]*dataset_length
         
         #Create all of the objects
-        for i in xrange(self.parityMatrix.shape[1]):
+        for i in xrange(bits_length):
+#             
             self.bits[i] = self.bitClass(prior_probability_matrix[:,i])
-        for i in xrange(self.parityMatrix.shape[0]):
+        for i in xrange(dataset_length):
             self.checks[i] = self.checkClass(self.syndromeValues[i])
         
         #Now connect the nodes together according to the parity check matrix
@@ -807,9 +816,9 @@ class SW_LDPC(object):
             self.bits[bitNumbers[i]].addConnection(self.checks[checkNumbers[i]])
             
         #Finally, prepare the nodes to begin propagating values!
-        for i in xrange(self.parityMatrix.shape[1]):
+        for i in xrange(bits_length):
             self.bits[i].prepare(self.alphabet)
-        for i in xrange(self.parityMatrix.shape[0]):
+        for i in xrange(dataset_length):
             self.checks[i].prepare(self.alphabet)
         
         #And now the code is ready to start propagating!
@@ -834,6 +843,7 @@ class SW_LDPC(object):
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
+            print "Sequence Guess: ",self.sequenceGuess
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
         
     #Propagate bit values to parity check nodes
@@ -892,31 +902,38 @@ def getIteration(self):
 
 if (__name__=="__main__"):
     from SW_prep import *
+    
     print "Loading arrays"
-    d= loadtxt("./DataFiles/FRAME_128_DATA.csv",dtype=int)
-    alice_sw =  d[0:]
-    bob_sw = d[1:]
+    d= loadtxt("/home/laurynas/workspace/KeyDistributionProtocol/DataFiles/FRAME_128_DATA_trimmed.csv",dtype=int)
+    alice_sw =  d[0,:]
+    bob_sw = d[1,:]
     total=len(alice_sw)
-    print total
+#     print total, len(bob_sw)
     #bob_sw = load("./real_results/Aalice_h1x.npy")
     #print transitionMatrix_data2(alice_sw,bob_sw,128)
-    #original    emat = sequenceProbMatrix(alice_sw,transitionMatrix_data2(alice_sw,bob_sw,128))
-    
-    emat = sequenceProbMatrix(alice_sw,transitionMatrix_data2(alice_sw,bob_sw,128)) # changed to 126 as 
-    print "finished emat"
+    transmat = transitionMatrix_data2(alice_sw,bob_sw,8)
+#     print "Transmat \t:",transmat
+    emat = sequenceProbMatrix(alice_sw,transmat)
+#     print "Seq prob matrix: \n\n:",emat
+#     print "emat :\t\t",emat
     #print "Making Wheel"
     #m= wheelmat.wheel(100000,50000)
-    for i in [400000,400000,400000,350000,350000,350000,350000,350000]:
-        m=randomMatrix(total,i,2)
-        print m
-        m=rowmin(m,2)
-        print m
-        print "lenghts",(m[0].getnnz(), len(bob_sw[0]))
-        syn=encode(m,bob_sw,128)
-        print "finished encoding"
-        #l=SW_LDPC(m,syn,emat,original=data,decoder=(SW_nbBit_dbg,SW_nbCheck_dbg))
-        l=SW_LDPC(m,syn,emat,original=bob_sw,decoder='bp-fft')
+    for i in [50]:
+        parity_matrix=randomMatrix(total,i,2)
+#         print "(Columns, rows):", (parity_matrix.shape)
+#         print "Minimizing rows in matrix"
+#         parity_matrix=rowmin(parity_matrix,2)
+#         print "Minimization is finished. Starting encoding"
+        syndromes=encode(parity_matrix,bob_sw,8)
+        print sum(syndromes!=0)
+        print "Finished encoding. Will be doing SW_LDPC"
+        #l=SW_LDPC(m,syndromes,emat,original=data,decoder=(SW_nbBit_dbg,SW_nbCheck_dbg))
+#         print "Alice: ",alice_sw
+#         print "Bob:   ",bob_sw
+        l=SW_LDPC(parity_matrix,syndromes,emat,original=alice_sw,decoder='bp-fft')
+        print "created SW_LDPC. Will be decoding..."
         l.decode(iterations=70,frozenFor=5)
+        print "decoding done"
         print "RAN:",i
 
 
