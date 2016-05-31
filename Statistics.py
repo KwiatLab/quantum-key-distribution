@@ -59,9 +59,9 @@ def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_
     bin_string = zeros(number_of_timetags,dtype=uint64)
 
 
-    for i in range(number_of_timetags):
-        bin_number = around(timetags[i] / BINSIZE)
-        bin_string[i]+=bin_number
+    for number_of_parity_check_eqns in range(number_of_timetags):
+        bin_number = around(timetags[number_of_parity_check_eqns] / BINSIZE)
+        bin_string[number_of_parity_check_eqns]+=bin_number
 
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
@@ -112,7 +112,7 @@ def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
 
     '''
      as by increasing frame we increase the amount of ones that can be stored inside
-     (i.e. 10 can store 2 ones max and 100 can store 3 ones max)
+     (number_of_parity_check_eqns.e. 10 can store 2 ones max and 100 can store 3 ones max)
     '''
 
     size_of_alphabet = frame_size
@@ -121,7 +121,7 @@ def letter_probabilities_using_occupancy(frame_occupancies, frame_size):
     # print "Probability of zero: ", probability_zero
     
     for letter in xrange(size_of_alphabet):
-        # Counts probability of particular occupancy to occur (i.e. 1100 == 0011 == 0101 ==1010 == 0110 == 1001)
+        # Counts probability of particular occupancy to occur (number_of_parity_check_eqns.e. 1100 == 0011 == 0101 ==1010 == 0110 == 1001)
         probabilities[letter] = ((probability_one**letter)*(probability_zero**(frame_size-letter))) * get_binomial_coefficient(frame_size, letter)
         # print "Letter (occupancy): ", letter, " has probability: ", probabilities[letter]
     # divides by total number  of entries to obtain probability
@@ -131,16 +131,16 @@ def calculate_frame_entropy_using_occupancy(frame_occupancies, frame_size):
     entropy = 0
     size_of_alphabet = frame_size + 1
     probabilities = letter_probabilities_using_occupancy(frame_occupancies, frame_size+1)
-    for i in xrange(size_of_alphabet):
-        entropy += probabilities[i]*log2_modified(probabilities[i])
+    for number_of_parity_check_eqns in xrange(size_of_alphabet):
+        entropy += probabilities[number_of_parity_check_eqns]*log2_modified(probabilities[number_of_parity_check_eqns])
     return entropy*(-1)  
 
 def calculate_frame_entropy(frame_locations, frame_size):
     entropy = 0
     size_of_alphabet = get_size_of_alphabet(frame_size) + 1 
     probabilities = letter_probabilities(frame_locations, size_of_alphabet, 1)
-    for i in xrange(size_of_alphabet):
-        entropy += probabilities[i]*log2_modified(probabilities[i])
+    for number_of_parity_check_eqns in xrange(size_of_alphabet):
+        entropy += probabilities[number_of_parity_check_eqns]*log2_modified(probabilities[number_of_parity_check_eqns])
     return entropy*(-1)
 
 def calculate_frame_occupancy(binary_string, frame_size):
@@ -161,9 +161,9 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
     number_of_frames = len(frame_occupancies)
     frame_locations = zeros(number_of_frames,dtype=uint32)
     iterator = binary_string.__iter__()
-    i=-1
+    number_of_parity_check_eqns=-1
     for element in iterator:
-        i+=1
+        number_of_parity_check_eqns+=1
         # print "------------new iteration------------------"
         map_value = 0
         frame_number = int(element/frame_size)
@@ -195,12 +195,12 @@ def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, f
     frame_numbers = binary_string.copy()
     frame_numbers /= frame_size
 
-    for i in xrange(number_of_timetags):
+    for number_of_parity_check_eqns in xrange(number_of_timetags):
         mapping_value = 0
-        frame_number = frame_numbers[i]
-        # old mapping: mapping_value = ((binary_string[i] % frame_size)+1) * power(frame_size,(frame_occupancies[frame_number]-1)) 
+        frame_number = frame_numbers[number_of_parity_check_eqns]
+        # old mapping: mapping_value = ((binary_string[number_of_parity_check_eqns] % frame_size)+1) * power(frame_size,(frame_occupancies[frame_number]-1)) 
         # position + (occupancy-1)(frame_size)               
-        mapping_value = ((binary_string[i] % frame_size)+1) + pow((frame_size*(frame_occupancies[frame_number]-1)),1/(frame_occupancies[frame_number]))
+        mapping_value = ((binary_string[number_of_parity_check_eqns] % frame_size)+1) + pow((frame_size*(frame_occupancies[frame_number]-1)),1/(frame_occupancies[frame_number]))
 #         print frame_occupancies[frame_number],"\tmap",mapping_value
         frame_locations[frame_number] += mapping_value
 
@@ -302,11 +302,11 @@ def binData(bufAlice,binsize):
 
 def extractAliceBob(c,t,aliceChannels,bobChannels):
     bobmask = (c==bobChannels[0])
-    for i in range(1,len(bobChannels)):
-        bobmask = logical_or(bobmask,c==bobChannels[i])
+    for number_of_parity_check_eqns in range(1,len(bobChannels)):
+        bobmask = logical_or(bobmask,c==bobChannels[number_of_parity_check_eqns])
     alicemask = (c == aliceChannels[0])
-    for i in range(1,len(aliceChannels)):
-        alicemask = logical_or(alicemask,c==aliceChannels[i])
+    for number_of_parity_check_eqns in range(1,len(aliceChannels)):
+        alicemask = logical_or(alicemask,c==aliceChannels[number_of_parity_check_eqns])
 
     bob = t[bobmask]
     alice = t[alicemask]
@@ -315,10 +315,10 @@ def extractAliceBob(c,t,aliceChannels,bobChannels):
     alice_pol  = c[alicemask]
 
     #Reset the polarization detectors
-    for i in range(len(aliceChannels)):
-        alice_pol[alice_pol==aliceChannels[i]]=i
-    for i in range(len(bobChannels)):
-        bob_pol[bob_pol==bobChannels[i]]=i
+    for number_of_parity_check_eqns in range(len(aliceChannels)):
+        alice_pol[alice_pol==aliceChannels[number_of_parity_check_eqns]]=number_of_parity_check_eqns
+    for number_of_parity_check_eqns in range(len(bobChannels)):
+        bob_pol[bob_pol==bobChannels[number_of_parity_check_eqns]]=number_of_parity_check_eqns
 
     return (bob,alice,bob_pol,alice_pol)
 
@@ -366,13 +366,13 @@ def resequence1(location_value,frame_size,occupancy,actual_binary_string_bool=No
     # if (actual_binary_string_bool==None):
     #     actual_binary_string_bool = zeros(frame_size,dtype=bool)
      
-    # actual mapping: (binary_string[i] % frame_size) * (frame_size**(frame_occupancies[frame_number]-1))
+    # actual mapping: (binary_string[number_of_parity_check_eqns] % frame_size) * (frame_size**(frame_occupancies[frame_number]-1))
     # high level translation: (position of 1 in frame) * (frame_size^(that_frame_occupancy - 1)) 
     # For frame occ of 1 (most likely): location value would simply be its position in frame
-    # For frame occ of 2:               location value would simply be its occupancy(i.e. 2)*(position in frame*(frame_size))\
+    # For frame occ of 2:               location value would simply be its occupancy(number_of_parity_check_eqns.e. 2)*(position in frame*(frame_size))\
 
     # occupancy of particual frame (usually 1)
-    for i in range(occupancy):
+    for number_of_parity_check_eqns in range(occupancy):
         # position of 1 in laser binary string (as location value in case of occ 1 is just position in frame)
         actual_binary_string_bool[frame_offset+location_value%frame_size] = True
         # why would you do this?? this is local variable and is not used anywhere
@@ -384,9 +384,9 @@ def resequence1(location_value,frame_size,occupancy,actual_binary_string_bool=No
 def resequence(locations,occupancies,frame_size):
     # create array of actual binary string length
     actual_binary_string_bool = zeros(frame_size*len(locations),dtype=bool)
-    for i in xrange(len(locations)):
+    for number_of_parity_check_eqns in xrange(len(locations)):
         # originally wasn't assigning new value to actual_binary_string_bool
-        actual_binary_string_bool = resequence1(locations[i],frame_size,occupancies[i],actual_binary_string_bool,frame_size*i)
+        actual_binary_string_bool = resequence1(locations[number_of_parity_check_eqns],frame_size,occupancies[number_of_parity_check_eqns],actual_binary_string_bool,frame_size*number_of_parity_check_eqns)
     return actual_binary_string_bool
 
 
@@ -461,8 +461,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         # ----------------------------------------------------------------------------------------------------------------
 
         print "Alice and Bob frame location DATA saved for LDPC procedure."
-        # fmt="%i" saves signed decimal integers
-        savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
+        # fmt="%number_of_parity_check_eqns" saves signed decimal integers
+        savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%number_of_parity_check_eqns")
 
 #==================CODE STATISTICS=================================================================================================
 

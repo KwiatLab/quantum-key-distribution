@@ -76,18 +76,18 @@ def theoretical_entropy_transition_matrix(p_letter,transmat,alphabet):
 #     print("PA:",p_letA)
 #     print("PB:",p_letter)
     entropy_per_letter = 0.0
-    for i in xrange(len(p_letA)):
-        if (p_letA[i] > 0):
-            entropy_per_letter-=p_letA[i]*log2(p_letA[i])
+    for number_of_parity_check_eqns in xrange(len(p_letA)):
+        if (p_letA[number_of_parity_check_eqns] > 0):
+            entropy_per_letter-=p_letA[number_of_parity_check_eqns]*log2(p_letA[number_of_parity_check_eqns])
     print "\nEntropy Per Letter:",entropy_per_letter
     
     entropy_s2gs1 = 0.0
     # Takes first COLUMN length     
-    for i in xrange(len(transmat[:,0])):
+    for number_of_parity_check_eqns in xrange(len(transmat[:,0])):
         # Takes first ROW length       
         for j in xrange(len(transmat[0,:])):
-            if (transmat[i,j] > 0.0 and p_letter[j] > 0.0):
-                entropy_s2gs1 -= p_letter[j]*transmat[i,j]*log2(transmat[i,j])
+            if (transmat[number_of_parity_check_eqns,j] > 0.0 and p_letter[j] > 0.0):
+                entropy_s2gs1 -= p_letter[j]*transmat[number_of_parity_check_eqns,j]*log2(transmat[number_of_parity_check_eqns,j])
     #entropy_s2gs1/=float(len(transmat[0,:]))
     
     entropy_left = entropy_per_letter-entropy_s2gs1

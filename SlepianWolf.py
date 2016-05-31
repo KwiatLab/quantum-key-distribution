@@ -24,6 +24,8 @@ from scipy.sparse import lil_matrix
 def encode(parityMatrix, inputbits, alphabet):
     #The parityMatrix has the same width as inputbits,
     #so all that really needs to be done is matrix multiplication: parityMatrix * inputbits
+#     print "Is true or not:",(parityMatrix.dot(inputbits)).shape, inputbits.reshape()
+#     print parityMatrix.shape,len(inputbits)
     return (parityMatrix.dot(inputbits)%alphabet).astype(uint16)
     
 #CHECK
@@ -114,12 +116,12 @@ class sw_math(object):
     #input:
     #a b c d
     #e f g h
-    #i j k l
+    #number_of_parity_check_eqns j k l
     #
     #returns
     #b+c+d a+c+d a+b+d a+b+c
     #f+g+h e+g+h e+f+h e+f+g
-    #j+k+l i+k+l i+j+l i+j+k
+    #j+k+l number_of_parity_check_eqns+k+l number_of_parity_check_eqns+j+l number_of_parity_check_eqns+j+k
     
     #addcol_fast:
     #Does the sum quickly, at the expense of possible infinities messing with the answer.
@@ -188,7 +190,7 @@ class sw_math(object):
     #input:
     #a b c d
     #e f g h
-    #i j k l
+    #number_of_parity_check_eqns j k l
     #
     #returns
     #bcd acd abd abc
@@ -266,8 +268,8 @@ class sw_math(object):
         
         #Divide every entry by the necessary value to normalize
         res/=colsum
-        #for i in xrange(res.shape[0]):
-        #    res[i,:] /=colsum
+        #for number_of_parity_check_eqns in xrange(res.shape[0]):
+        #    res[number_of_parity_check_eqns,:] /=colsum
         
         return res
     
@@ -299,10 +301,10 @@ class sw_math(object):
     #input
     #a b c
     #d e f
-    #g h i
+    #g h number_of_parity_check_eqns
     #
     #output
-    # fft(a d g)  fft(b e h) fft(c f i)
+    # fft(a d g)  fft(b e h) fft(c f number_of_parity_check_eqns)
     def fftcol(self,mat):
         return fft(mat,axis=0)
     
@@ -312,10 +314,10 @@ class sw_math(object):
     #input
     #a b c
     #d e f
-    #g h i
+    #g h number_of_parity_check_eqns
     #
     #output
-    # ifft(a d g)  ifft(b e h) ifft(c f i)
+    # ifft(a d g)  ifft(b e h) ifft(c f number_of_parity_check_eqns)
     def ifftcol(self,mat):
         return ifft(mat,axis=0)
     
@@ -354,8 +356,8 @@ class sw_math(object):
     #the amount of bits in parity check, and given the syndrome they satisfy, it returns a matrix 
     #where the columns are the probabilities of each bit given all the other bits.
     #In math terms,
-    #Given mat M, with Mij being probability of bit j being letter i, and syndrome S,
-    #It returns mat R with Rij being probability of bit j being letter i given S and all Mab where b!=j
+    #Given mat M, with Mij being probability of bit j being letter number_of_parity_check_eqns, and syndrome S,
+    #It returns mat R with Rij being probability of bit j being letter number_of_parity_check_eqns given S and all Mab where b!=j
     #
     #Explanation:
     #Let's say you have multiple bits of alphabet A, and you know the probability of getting each letter.
@@ -441,9 +443,10 @@ class sw_math(object):
     #and in this case it just happens to be that the upwards propagation ends up the same as downwards
     #propagation, so it can be thought of as both an ever-expanding tree or a graph.
     
-    def bitProbabilities(self,mat, prev):
+    def bitProbabilities(self,input_matrix, probability_matrix):
         #Does nultiplication of each given all the others, and multiplies in the initial value
-        return self.mulcol(mat)*prev.reshape((len(prev),1))
+        print "Dimensions:\n",self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
+        return self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
     
     #BITVALUE
     #Finds the best guess for the value of a parity check given the prior prior probability estimation,
@@ -476,13 +479,13 @@ class sw_mathc(sw_math):
     #Given mat, normalize each column independently. Makes sure there are no negative values
     def normalizecol(self,mat):
         res = array(mat.real,copy=True,dtype=float64)
-        
+#         print "RES", res
         #Sometimes     FFT returns tiny negative value -> normalize that to 0:
         res[res<0.00]=0.00
         
         #Sum up all the values in each column
         colsum= sum(res,0)
-        
+#         print"Colsums", colsum
         if (any(colsum<=0.0) or any(colsum >= Inf)):
             self.err("Column normalization failed! Expect error explosion!")
             self.err("Matrix:")
@@ -493,8 +496,8 @@ class sw_mathc(sw_math):
         
         #Divide every entry by the necessary value to normalize
         res/=colsum
-        #for i in xrange(res.shape[0]):
-        #    res[i,:] /=colsum
+        #for number_of_parity_check_eqns in xrange(res.shape[0]):
+        #    res[number_of_parity_check_eqns,:] /=colsum
         
         return res
     
@@ -566,7 +569,7 @@ class swnb_node(sw_mathc):
     def prepare(self,alphabet):
 #         print "node:",self
         
-        print type(self),"Number of connections",len(self.connections)
+#         print type(self),"Number of connections",len(self.connections)
         if (len(self.connections)==0):
             self.err("\t\t\t\t\t WARNING: Node not connected!")
         #elif (len(self.connections)<2):
@@ -574,15 +577,18 @@ class swnb_node(sw_mathc):
         self.inputMatrix = ones((alphabet,len(self.connections)))
     
     #Recieve recieves the conditional probability of the given node according to the object
-    def     receive(self,obj,prob):
+    def receive(self,obj,prob):
         self.inputMatrix[:,self.connections.index(obj)] = prob
     
     def runAlgorithm(self):
+#         print "Ima here!"
         return self.bitProbabilities(self.inputMatrix,ones(self.inputMatrix.shape[0]))
     
     def propagate(self):
         #Find the resulting probability matrix
         mat = self.runAlgorithm()
+#         print "\n\n RESULTING PROB MATRIX\n",mat,"\n\n"
+
         
         #Propagate the values to each of the associated matrix's connections
         for i in xrange(len(self.connections)):
@@ -635,7 +641,12 @@ class SW_nbBit(swnb_node):
         super(SW_nbBit,self).__init__()
         self.priorProbability = priorProbability
     def runAlgorithm(self):
-        return self.normalizecol(self.bitProbabilities(self.inputMatrix,self.priorProbability))
+        print"\n Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+        return_value = self.normalizecol(self.bitProbabilities(self.inputMatrix,self.priorProbability))
+        print"\n Input M and PRIOR M After multiplication and normalization: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+
+        return return_value
+
     def getValue(self):
         return self.bitValue(self.inputMatrix,self.priorProbability)
 
@@ -795,18 +806,18 @@ class SW_LDPC(object):
     #Set the decoding mechanism up, connect all of the bitnodes to checknodes in the correct way and prepare to decode
     def prepare(self, prior_probability_matrix):
         #Set up the necessary arrays
-        bits_length = self.parityMatrix.shape[1]
+        number_of_parity_check_eqns = self.parityMatrix.shape[1]
         #bits have length of big number (iterate with value 40000)         
-        self.bits = [None]*bits_length
+        self.bits = [None]*number_of_parity_check_eqns
         #checks have length of alice_sw length (length of dataset)
-        dataset_length = self.parityMatrix.shape[0]         
-        self.checks = [None]*dataset_length
+        number_of_bits = self.parityMatrix.shape[0]         
+        self.checks = [None]*number_of_bits
         
         #Create all of the objects
-        for i in xrange(bits_length):
+        for i in xrange(number_of_parity_check_eqns):
 #             
             self.bits[i] = self.bitClass(prior_probability_matrix[:,i])
-        for i in xrange(dataset_length):
+        for i in xrange(number_of_bits):
             self.checks[i] = self.checkClass(self.syndromeValues[i])
         
         #Now connect the nodes together according to the parity check matrix
@@ -816,9 +827,9 @@ class SW_LDPC(object):
             self.bits[bitNumbers[i]].addConnection(self.checks[checkNumbers[i]])
             
         #Finally, prepare the nodes to begin propagating values!
-        for i in xrange(bits_length):
+        for i in xrange(number_of_parity_check_eqns):
             self.bits[i].prepare(self.alphabet)
-        for i in xrange(dataset_length):
+        for i in xrange(number_of_bits):
             self.checks[i].prepare(self.alphabet)
         
         #And now the code is ready to start propagating!
@@ -829,21 +840,22 @@ class SW_LDPC(object):
     #####################################################################
     
     
-    #Returns the amount of errors in total that there are between mat1 and mat2
+    #Returns the amount of errors in number_of_total_bits that there are between mat1 and mat2
     def errors(self,mat1,mat2):
         return sum(mat1!=mat2)    
     
     #Returns the number of errors the current sequence has compared to the known 'correct' sequence
     def distanceFromCorrect(self):
-        if (self.correctResult==None):
-            return None
-        return self.errors(self.correctResult,self.sequenceGuess)
+#         if (self.correctResult==None):
+#             print "Correct result is not provided so cannot estimate error of decoded string"
+#             return None
+        return float(self.errors(self.correctResult,self.sequenceGuess))/len(self.correctResult),self.errors(self.correctResult,self.sequenceGuess)
         
     #Guesses the current values and failed probabilities    
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
-            print "Sequence Guess: ",self.sequenceGuess
+#             print "Sequence Guess: ",self.sequenceGuess
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
         
     #Propagate bit values to parity check nodes
@@ -907,8 +919,8 @@ if (__name__=="__main__"):
     d= loadtxt("/home/laurynas/workspace/KeyDistributionProtocol/DataFiles/FRAME_128_DATA_trimmed.csv",dtype=int)
     alice_sw =  d[0,:]
     bob_sw = d[1,:]
-    total=len(alice_sw)
-#     print total, len(bob_sw)
+    number_of_total_bits=len(alice_sw)
+#     print number_of_total_bits, len(bob_sw)
     #bob_sw = load("./real_results/Aalice_h1x.npy")
     #print transitionMatrix_data2(alice_sw,bob_sw,128)
     transmat = transitionMatrix_data2(alice_sw,bob_sw,8)
@@ -918,23 +930,28 @@ if (__name__=="__main__"):
 #     print "emat :\t\t",emat
     #print "Making Wheel"
     #m= wheelmat.wheel(100000,50000)
-    for i in [50]:
-        parity_matrix=randomMatrix(total,i,2)
-#         print "(Columns, rows):", (parity_matrix.shape)
+    for number_of_parity_check_eqns in [number_of_total_bits]:
+        number_parity_bit_edges = 2
+        parity_matrix=randomMatrix(number_of_total_bits,number_of_parity_check_eqns,number_parity_bit_edges)
+#         parity check matrix is no TRANSPOSED!!!!!!!!!!!!!!!!!??????
+#         print "(rows, columns):", (parity_matrix.shape)
 #         print "Minimizing rows in matrix"
-#         parity_matrix=rowmin(parity_matrix,2)
+#         parity_matrix=rowmin(parity_matrix,self.errors(self.correctResult,self.sequenceGuess)2)
 #         print "Minimization is finished. Starting encoding"
-        syndromes=encode(parity_matrix,bob_sw,8)
-        print sum(syndromes!=0)
+        alphabet_size = 8
+        syndromes=encode(parity_matrix,alice_sw,alphabet_size)
+
         print "Finished encoding. Will be doing SW_LDPC"
         #l=SW_LDPC(m,syndromes,emat,original=data,decoder=(SW_nbBit_dbg,SW_nbCheck_dbg))
 #         print "Alice: ",alice_sw
 #         print "Bob:   ",bob_sw
+#  ====================SENDING ENCODED STUFF OVER NOISY CHANNEL=================================
+#       Pick decoder depending on alphabet type (binary, non-binary)
         l=SW_LDPC(parity_matrix,syndromes,emat,original=alice_sw,decoder='bp-fft')
         print "created SW_LDPC. Will be decoding..."
         l.decode(iterations=70,frozenFor=5)
         print "decoding done"
-        print "RAN:",i
+        print "RAN:",number_of_parity_check_eqns
 
 
 

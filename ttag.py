@@ -33,7 +33,7 @@ and of dtype double when reading if a resolution is set.
 getfreebuffer():
     Returns the next free buffer number. Refer to tt_getNextFree()
 
-deletebuffer(i):
+deletebuffer(number_of_parity_check_eqns):
     Deletes a buffer on linux, if process crashed
 
 class TTBuffer
@@ -448,11 +448,11 @@ class TTBuffer(object):
         return self.getdatapoints()
     
     #Allows the operator []
-    def __getitem__(self,i):
-        if (isinstance(i,slice)):
-            start = i.start
-            stop = i.stop
-            step = i.step
+    def __getitem__(self,number_of_parity_check_eqns):
+        if (isinstance(number_of_parity_check_eqns,slice)):
+            start = number_of_parity_check_eqns.start
+            stop = number_of_parity_check_eqns.stop
+            step = number_of_parity_check_eqns.step
             
             if (start):
                 if (start<0):
@@ -502,17 +502,17 @@ class TTBuffer(object):
                 return (c,t.astype(numpy.double)*self.resolution)
                 
         else:
-            if (i<0):
-                if (self.size()+i<0 or self.datapoints +i < 0):
+            if (number_of_parity_check_eqns<0):
+                if (self.size()+number_of_parity_check_eqns<0 or self.datapoints +number_of_parity_check_eqns < 0):
                     raise ValueError("Array index out of buffer bounds")
-                i = self.datapoints + i
+                number_of_parity_check_eqns = self.datapoints + number_of_parity_check_eqns
             else:
-                if (i > self.datapoints or i < self.datapoints-self.size()):
+                if (number_of_parity_check_eqns > self.datapoints or number_of_parity_check_eqns < self.datapoints-self.size()):
                     raise ValueError("Array index out of buffer bounds")
             c=ctypes.c_ubyte()
             t=ctypes.c_ulonglong()
             
-            libttag.tt_readarray(self.tt_buf,i,ctypes.byref(c),ctypes.byref(t),1)
+            libttag.tt_readarray(self.tt_buf,number_of_parity_check_eqns,ctypes.byref(c),ctypes.byref(t),1)
             if (numpy.isnan(self.resolution)):
                 return (c.value,t.value)
             else:
@@ -658,8 +658,8 @@ class TTBuffer(object):
 def getfreebuffer():
     return libttag.tt_getNextFree()
 
-def deletebuffer(i):
-    libttag.tt_deleteMap(i)
+def deletebuffer(number_of_parity_check_eqns):
+    libttag.tt_deleteMap(number_of_parity_check_eqns)
 
 if (__name__=="__main__"):
     #This isn't really a full-feature test. It is there just to make me feel better about myself

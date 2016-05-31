@@ -42,9 +42,9 @@ def transitionMatrix_symmetric(alph,err):
 def sequenceProbMatrix(seq,trans):
     res = zeros((trans.shape[0],len(seq)))
     
-    for i in xrange(len(seq)):
+    for number_of_parity_check_eqns in xrange(len(seq)):
         # takes every column and assigns transmat columns          
-        res[:,i]=trans[:,seq[i]]
+        res[:,number_of_parity_check_eqns]=trans[:,seq[number_of_parity_check_eqns]]
     
     return res
 
@@ -69,8 +69,8 @@ def normalizecol(mat):
     
     #Divide every entry by the necessary value to normalize
     res/=colsum
-    #for i in xrange(res.shape[0]):
-    #    res[i,:] /=colsum
+    #for number_of_parity_check_eqns in xrange(res.shape[0]):
+    #    res[number_of_parity_check_eqns,:] /=colsum
     
     return res
 
@@ -94,9 +94,9 @@ def transitionNumbers_data(mat1,mat2,alph):
     lmat2 = zeros((len(mat1),alph))
     lmat1 = zeros((alph,len(mat2)))
     
-    for i in xrange(alph):
-        lmat1[i,:][mat2==i] = 1
-        lmat2[:,i][mat1==i] = 1
+    for number_of_parity_check_eqns in xrange(alph):
+        lmat1[number_of_parity_check_eqns,:][mat2==number_of_parity_check_eqns] = 1
+        lmat2[:,number_of_parity_check_eqns][mat1==number_of_parity_check_eqns] = 1
     return dot(lmat1,lmat2)
 
 def transitionNumbers_data2(mat1,mat2,alph):
@@ -104,9 +104,9 @@ def transitionNumbers_data2(mat1,mat2,alph):
     datalen=int(len(mat1))
     alph=int(alph+1)
     code="""
-        long long i = 0;
-        for (;i<datalen;i++) {
-            rmat[mat2[i]*alph+mat1[i]]+=1;
+        long long number_of_parity_check_eqns = 0;
+        for (;number_of_parity_check_eqns<datalen;number_of_parity_check_eqns++) {
+            rmat[mat2[number_of_parity_check_eqns]*alph+mat1[number_of_parity_check_eqns]]+=1;
         }
     """
     inline(code,['mat1','mat2','rmat','datalen','alph'])
@@ -142,9 +142,9 @@ def writeMatrix(mat,fname):
     mat=mat.asformat("lil")
     f = open(fname,"w")
     f.write(str(mat.shape[0])+" "+str(mat.shape[1])+" 0\n")
-    for i in xrange(len(mat.rows)):
-        for j in xrange(len(mat.rows[i])):
-            f.write(str(i)+" " + str(mat.rows[i][j]) + " " + str(mat.data[i][j])+ "\n")
+    for number_of_parity_check_eqns in xrange(len(mat.rows)):
+        for j in xrange(len(mat.rows[number_of_parity_check_eqns])):
+            f.write(str(number_of_parity_check_eqns)+" " + str(mat.rows[number_of_parity_check_eqns][j]) + " " + str(mat.data[number_of_parity_check_eqns][j])+ "\n")
     f.close()
 
 #READMATRIX
@@ -155,33 +155,36 @@ def readMatrix(fname):
 
 
 #Creates a random matrix with 'checks' parity checks and 'bits' total bits
+#  checks - number of parity check eqns
+#  bits - number of bits
+#  parities - 1s in parity check matrix of simply number of edges between bit nodes->parity nodes
+#  this is how many parities does eahc bit have
 def randomMatrix(bits,checks,parities=3):
     #The matrix is created using its transpose to add parity checks to each bit
-    mat = lil_matrix((bits,checks),dtype = uint16)
-    print mat
-    for i in xrange(mat.shape[0]):
+    parity_check_matrix = lil_matrix((bits,checks),dtype = uint16)
+#     print parity_check_matrix
+    for number_of_parity_check_eqns in xrange(parity_check_matrix.shape[0]):
         j=0
         while (j<parities):
-            loc = randmodule.randrange(mat.shape[1])
-            if (mat[i,loc]==0):
-                mat[i,loc]=1
+            loc = randmodule.randrange(parity_check_matrix.shape[1])
+            if (parity_check_matrix[number_of_parity_check_eqns,loc]==0):
+                parity_check_matrix[number_of_parity_check_eqns,loc]=1
                 j+=1
-    
-    return mat.transpose()
+    return parity_check_matrix.transpose()
 
 #Makes sure each row has a minimum of "min" entries
 def rowmin(mat,rentries):
     failrows=0
     mat = mat.asformat("lil").copy()
-    print mat, "printing rowmin mat"
-    for i in xrange(len(mat.rows)):
+#     print mat, "printing rowmin mat"
+    for number_of_parity_check_eqns in xrange(len(mat.rows)):
         pass
-#         print len(mat.rows[i]),"<",rentries+1
+#         print len(mat.rows[number_of_parity_check_eqns]),"<",rentries+1
 #WTF?Infinite loop
-#         while (len(mat.rows[i])<rentries+1):    #The +1 is there due to identity
+#         while (len(mat.rows[number_of_parity_check_eqns])<rentries+1):    #The +1 is there due to identity
 #             loc = randmodule.randrange(0,mat.shape[1])
-#             if (mat[i,loc]==0):
-#                 mat[i,loc]=1
+#             if (mat[number_of_parity_check_eqns,loc]==0):
+#                 mat[number_of_parity_check_eqns,loc]=1
 #                 failrows+=1
     #print "Added",failrows,"entries"
     return mat
@@ -204,26 +207,26 @@ def normrow(mat):
     overRows = []
     
     #Fill the underRows and overRows arrays
-    for i in xrange(len(mat.rows)):
-        if (len(mat.rows[i])>checkBitNumberUp):
-            overRows.append(i)
-        elif (len(mat.rows[i])<checkBitNumberDown):
-            underRows.append(i) 
+    for number_of_parity_check_eqns in xrange(len(mat.rows)):
+        if (len(mat.rows[number_of_parity_check_eqns])>checkBitNumberUp):
+            overRows.append(number_of_parity_check_eqns)
+        elif (len(mat.rows[number_of_parity_check_eqns])<checkBitNumberDown):
+            underRows.append(number_of_parity_check_eqns) 
     
     #print "O:",len(overRows),"U:",len(underRows),"T:",totalElementsPerCheck    
     
     #Now move elements from overRows to underRows
-    for i in overRows:
+    for number_of_parity_check_eqns in overRows:
         if (len(underRows)<=0):
             break
-        while (len(mat.rows[i])>checkBitNumberUp):
-            chosenValue=randmodule.choice(mat.rows[i])
+        while (len(mat.rows[number_of_parity_check_eqns])>checkBitNumberUp):
+            chosenValue=randmodule.choice(mat.rows[number_of_parity_check_eqns])
             chosenCheck = randmodule.randint(0,len(underRows)-1)
             
             if (mat[underRows[chosenCheck],chosenValue]==0):
                 
                 #Remove the value from th current row
-                mat[i,chosenValue]=0
+                mat[number_of_parity_check_eqns,chosenValue]=0
                 
                 #Put it in the new row
                 mat[underRows[chosenCheck],chosenValue] = 1
@@ -259,12 +262,12 @@ def crossover_asym(mat1,mat2,percent):
     m2rows = []
     
     #Choose random rows
-    for i in xrange(mat1.shape[0]):
+    for number_of_parity_check_eqns in xrange(mat1.shape[0]):
         if (randmodule.random() <= percent):
-            m1rows.append(i)
-    for i in xrange(mat2.shape[0]):
+            m1rows.append(number_of_parity_check_eqns)
+    for number_of_parity_check_eqns in xrange(mat2.shape[0]):
         if (randmodule.random() <= percent):
-            m2rows.append(i)
+            m2rows.append(number_of_parity_check_eqns)
     
     #Normalize the rows to have the same amount
     while (len(m1rows) > len(m2rows)):
@@ -273,8 +276,8 @@ def crossover_asym(mat1,mat2,percent):
         m2rows.pop(randmodule.randint(0,len(m2rows)-1))
     
     #Exchange the rows!
-    for i in xrange(len(m1rows)):
-        child[m1rows[i],:]=mat2[m2rows[i],:]
+    for number_of_parity_check_eqns in xrange(len(m1rows)):
+        child[m1rows[number_of_parity_check_eqns],:]=mat2[m2rows[number_of_parity_check_eqns],:]
     
     return child
     
@@ -295,15 +298,15 @@ def crossover(mat1,mat2,percent):
     rows = []
     
     #Choose random rows
-    for i in xrange(mat1.shape[0]):
+    for number_of_parity_check_eqns in xrange(mat1.shape[0]):
         if (randmodule.random() <= percent):
-            rows.append(i)
+            rows.append(number_of_parity_check_eqns)
     
     #Crossover!
-    for i in xrange(len(rows)):
-        child.rows[i]=mat2.rows[i]
-        child.data[i]=mat2.data[i]
-        #child[rows[i],:]=mat2[rows[i],:]#VERY SLOOOW
+    for number_of_parity_check_eqns in xrange(len(rows)):
+        child.rows[number_of_parity_check_eqns]=mat2.rows[number_of_parity_check_eqns]
+        child.data[number_of_parity_check_eqns]=mat2.data[number_of_parity_check_eqns]
+        #child[rows[number_of_parity_check_eqns],:]=mat2[rows[number_of_parity_check_eqns],:]#VERY SLOOOW
     return child
 
 #Adds 'number' ones to the matrix

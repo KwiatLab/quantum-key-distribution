@@ -65,12 +65,12 @@ def getDelays(bufAlice,channels1,channels2,initialdelay2=0.0,delays1=None,delays
         delays2=ones(len(channels2))*initialdelay2
 
     #First set all of channels2 delays
-    for i in range(len(delays2)):
-        delays2[i] += getDelay(bufAlice,channels1[0],channels2[i],delays1[0],delays2[i],delaymax=delaymax,time=time)
+    for number_of_parity_check_eqns in range(len(delays2)):
+        delays2[number_of_parity_check_eqns] += getDelay(bufAlice,channels1[0],channels2[number_of_parity_check_eqns],delays1[0],delays2[number_of_parity_check_eqns],delaymax=delaymax,time=time)
 
     #Next, set all of delays for channels1
-    for i in range(1,len(delays1)):
-        delays1[i] -= getDelay(bufAlice,channels1[i],channels2[0],delays1[i],delays2[0])
+    for number_of_parity_check_eqns in range(1,len(delays1)):
+        delays1[number_of_parity_check_eqns] -= getDelay(bufAlice,channels1[number_of_parity_check_eqns],channels2[0],delays1[number_of_parity_check_eqns],delays2[0])
 
     return (delays1,delays2)
 """
@@ -80,16 +80,16 @@ def plotAll(bufAlice,channels1,channels2,delays1,delays2):
     dist=(array(range(bins))-bins/2)*bufAlice.resolution
     f,ax=subplots(len(channels1),sharex=True)
     plots = []
-    for i in range(len(channels1)):
+    for number_of_parity_check_eqns in range(len(channels1)):
         for j in range(len(channels2)):
-            ax[i].set_ylabel("Channel "+str(i+1))
-            cor=bufAlice.correlate(1.0,length,bins,channels1[i],channels2[j],channel1delay=delays1[i],channel2delay=delays2[j])
+            ax[number_of_parity_check_eqns].set_ylabel("Channel "+str(number_of_parity_check_eqns+1))
+            cor=bufAlice.correlate(1.0,length,bins,channels1[number_of_parity_check_eqns],channels2[j],channel1delay=delays1[number_of_parity_check_eqns],channel2delay=delays2[j])
             #Now, we have a way to fit to gaussian - set initial parameters
             mu = argmax(cor)
             sigma = 5
             A = max(cor)
             popt,pcov = curve_fit(gauss,range(bins),cor,p0=(A,mu,sigma))
-            plots.append(ax[i].plot(dist,cor,linewidth=2,label=r"Channel "+str(j+1) + r" (A="+str(int(round(popt[0])))+r" $\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps)"))
+            plots.append(ax[number_of_parity_check_eqns].plot(dist,cor,linewidth=2,label=r"Channel "+str(j+1) + r" (A="+str(int(round(popt[0])))+r" $\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps)"))
     ax[0].set_title("Correlations Between Alice and Bob's Channels")
     f.subplots_adjust(hspace=0)
     ax[0].legend()
