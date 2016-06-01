@@ -445,7 +445,8 @@ class sw_math(object):
     
     def bitProbabilities(self,input_matrix, probability_matrix):
         #Does nultiplication of each given all the others, and multiplies in the initial value
-        print "Dimensions:\n",self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
+#         print "Dimensions:\n",self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
+#         print "Compare",input_matrix, self.mulcol(input_matrix)
         return self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
     
     #BITVALUE
@@ -586,6 +587,7 @@ class swnb_node(sw_mathc):
     
     def propagate(self):
         #Find the resulting probability matrix
+#         print "IM HEEREEEE!!!!!!!!!!!!!!!!",type(self)
         mat = self.runAlgorithm()
 #         print "\n\n RESULTING PROB MATRIX\n",mat,"\n\n"
 
@@ -641,9 +643,11 @@ class SW_nbBit(swnb_node):
         super(SW_nbBit,self).__init__()
         self.priorProbability = priorProbability
     def runAlgorithm(self):
-        print"\n Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
-        return_value = self.normalizecol(self.bitProbabilities(self.inputMatrix,self.priorProbability))
-        print"\n Input M and PRIOR M After multiplication and normalization: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+        print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+        arg = self.bitProbabilities(self.inputMatrix,self.priorProbability)
+        print "\n\t Normalization Argument:\n",arg
+        return_value = self.normalizecol(arg)
+        print"\n\t After (Normalized) Argument\n",return_value 
 
         return return_value
 
