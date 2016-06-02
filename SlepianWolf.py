@@ -643,11 +643,11 @@ class SW_nbBit(swnb_node):
         super(SW_nbBit,self).__init__()
         self.priorProbability = priorProbability
     def runAlgorithm(self):
-        print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+#         print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
         arg = self.bitProbabilities(self.inputMatrix,self.priorProbability)
-        print "\n\t Normalization Argument:\n",arg
+#         print "\n\t Normalization Argument:\n",arg
         return_value = self.normalizecol(arg)
-        print"\n\t After (Normalized) Argument\n",return_value 
+#         print"\n\t After (Normalized) Argument\n",return_value 
 
         return return_value
 
@@ -918,25 +918,31 @@ def getIteration(self):
 
 if (__name__=="__main__"):
     from SW_prep import *
-    
+    from ParityCheckMatrixGen import gallager_matrix
     print "Loading arrays"
-    d= loadtxt("/home/laurynas/workspace/KeyDistributionProtocol/DataFiles/FRAME_128_DATA_trimmed.csv",dtype=int)
+    d= loadtxt("/home/laurynas/workspace/KeyDistributionProtocol/DataFiles/LDPC_input/FRAME_128_DATA.csv",dtype=int)
+#     d= loadtxt("/home/laurynas/workspace/KeyDistributionProtocol/DataFiles/FRAME_128_DATA_trimmed.csv",dtype=int)
+    alphabet_size = 128
     alice_sw =  d[0,:]
     bob_sw = d[1,:]
     number_of_total_bits=len(alice_sw)
 #     print number_of_total_bits, len(bob_sw)
     #bob_sw = load("./real_results/Aalice_h1x.npy")
     #print transitionMatrix_data2(alice_sw,bob_sw,128)
-    transmat = transitionMatrix_data2(alice_sw,bob_sw,8)
+    transmat = transitionMatrix_data2(alice_sw,bob_sw,alphabet_size)
 #     print "Transmat \t:",transmat
     emat = sequenceProbMatrix(alice_sw,transmat)
 #     print "Seq prob matrix: \n\n:",emat
 #     print "emat :\t\t",emat
     #print "Making Wheel"
     #m= wheelmat.wheel(100000,50000)
-    for number_of_parity_check_eqns in [number_of_total_bits]:
-        number_parity_bit_edges = 2
-        parity_matrix=randomMatrix(number_of_total_bits,number_of_parity_check_eqns,number_parity_bit_edges)
+    for number_parity_bit_edges in [6]:
+#         number_parity_bit_edges = 2
+#         parity_matrix=randomMatrix(number_of_total_bits,number_of_parity_check_eqns,number_parity_bit_edges)
+        column_weight = 3
+        number_of_parity_check_eqns_gallager = int(number_of_total_bits*column_weight/number_parity_bit_edges)
+        
+        parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, number_of_total_bits, column_weight, number_parity_bit_edges)
 #         parity check matrix is no TRANSPOSED!!!!!!!!!!!!!!!!!??????
 #         print "(rows, columns):", (parity_matrix.shape)
 #         print "Minimizing rows in matrix"
@@ -955,7 +961,7 @@ if (__name__=="__main__"):
         print "created SW_LDPC. Will be decoding..."
         l.decode(iterations=70,frozenFor=5)
         print "decoding done"
-        print "RAN:",number_of_parity_check_eqns
+#         /print "RAN:",number_of_parity_check_eqns
 
 
 
