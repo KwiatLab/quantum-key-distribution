@@ -52,7 +52,6 @@ from itertools import *
 #Assumes that the person's data is ordered
 
 def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_unit = 78.125):
-
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
     BINSIZE = around(binsize/relative_unit)
     number_of_timetags = len(timetags)
@@ -62,6 +61,7 @@ def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_
     for number_of_parity_check_eqns in range(number_of_timetags):
         bin_number = around(timetags[number_of_parity_check_eqns] / BINSIZE)
         bin_string[number_of_parity_check_eqns]+=bin_number
+    print "Im here"
 
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
@@ -391,18 +391,19 @@ def resequence(locations,occupancies,frame_size):
 
 
 def calculateStatistics(alice,bob,alice_pol,bob_pol):
+    print "I entered"
     #saveprep("main_high",*prep())
     numpy.set_printoptions(edgeitems = 100) 
     
 
     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
-
+    binary_entropies = {}
+    print "m here"
 #================FOR LOOP STARTS (recommended to go 1-13======================================================================================================================
     for frame_size in 2**array(range(1,13)):
         print "\n"
         print("DOING ALPHABET",frame_size)
-
 #======================PROCESSING DATA=========================================================
         print "Calculating frame occupancies..."
         alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
@@ -412,7 +413,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         b_joint = joint_entropy(alice_frame_occupancies, bob_frame_occupancies)
         b_shared = b_entropy_a+b_entropy_a-b_joint
         print "BINARY SINGLE ENTROPY: \n\t",b_entropy_a,"\n\t",b_entropy_b,"\n\t",b_joint,'\n\t', b_shared
-
+        
+        binary_entropies[str(frame_size)] = b_shared
         print("Calculating frame locations...")
         # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
@@ -462,7 +464,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 
         print "Alice and Bob frame location DATA saved for LDPC procedure."
         # fmt="%number_of_parity_check_eqns" saves signed decimal integers
-        savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%number_of_parity_check_eqns")
+#         savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%number_of_parity_check_eqns")
 
 #==================CODE STATISTICS=================================================================================================
 
@@ -532,20 +534,22 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
 
         alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size, 1)
         bob_occ_letter_probabilities = letter_probabilities(bob_frame_occupancies, frame_size, 1)
-
-        swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
-        nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
-        nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size,1)
-        nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
-
-#================================================================================================
-
-
-#         (te,te2,be,nbe)=entropy_calculate2(p1a,p1g1a,p1b,p1g1b,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
-        print (entropy_calculate(p1a, p1g1a, p1b, p1g1b, frame_size, 0.05, 0.85, 0.05, 0.85,coincidence_rate_non_binary, nb_bperf, 1.0, 0.8,nbpl, nbtransmat))
-        f=open("resultsLaurynas/entropy_1","a")
-
-#         f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(entropy_left)+"\n")
-#         print "Writing to file"
-#         f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
-        f.close()
+        
+        return binary_entropies
+        
+#         swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
+#         nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
+#         nbpl = letter_probabilities(alice_non_zero_positions_in_frame,frame_size,1)
+#         nbtransmat = transitionMatrix_data2(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame,frame_size)
+# 
+# #================================================================================================
+# 
+# 
+# #       (entropy_calculate(p1a, p1g1a, p1b, p1   (te,te2,be,nbe)=entropy_calculate2(p1a,p1g1a,p1b,p1g1b,frame_size,alice_occ_letter_probabilities,swtransmat,nb_bperf,nbpl,nbtransmat)
+#         printg1b, frame_size, 0.05, 0.85, 0.05, 0.85,coincidence_rate_non_binary, nb_bperf, 1.0, 0.8,nbpl, nbtransmat))
+#         f=open("resultsLaurynas/entropy_1","a")
+# 
+# #         f.write(str(frame_size)+" "+str(te)+" "+str(te2)+" "+str(be)+" "+str(nbe) +" "+str(entropy_left)+"\n")
+# #         print "Writing to file"
+# #         f.write(str(frame_size)+" "+str(entropy_mutual) + "\n")
+#         f.close()
