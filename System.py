@@ -132,8 +132,8 @@ if __name__ == '__main__':
 
     alice_thread.notify_ready()
     bob_thread.notify_ready()
-    while alice_thread.event.is_set() or bob_thread.event.is_set():
-        main_event.wait()
+#     while alice_thread.event.is_set() or bob_thread.event.is_set():
+#         main_event.wait()
 #     alice_thread.wait()
 #     bob_thread.wait()
 #         

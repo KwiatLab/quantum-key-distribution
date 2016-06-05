@@ -535,7 +535,7 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size, 1)
         bob_occ_letter_probabilities = letter_probabilities(bob_frame_occupancies, frame_size, 1)
         
-        return binary_entropies
+    return binary_entropies
         
 #         swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)
 #         nb_bperf= maxtag_a/len(alice_non_zero_positions_in_frame)
