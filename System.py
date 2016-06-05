@@ -25,8 +25,8 @@ def make_equal_size(alice_thread,bob_thread):
 def loadprep(fname,name):
 
     sys.stdout.flush()
-    alice = load("./resultsLaurynas/resultsLaurynas/"+name+"Ttags_"+fname+"_full.npy")
-    alice_pol=load("./resultsLaurynas/resultsLaurynas/"+name+"Channels_"+fname+"_full.npy")
+    alice = load("./resultsLaurynas/resultsLaurynas/"+name+"Ttags_"+fname+".npy")
+    alice_pol=load("./resultsLaurynas/resultsLaurynas/"+name+"Channels_"+fname+".npy")
     return (alice,alice_pol)
 
 class PartyThread(threading.Thread):
@@ -76,7 +76,6 @@ class PartyThread(threading.Thread):
 
             print "will be calculating optimal frame size but first lets notify that ready..." 
             self.notify_finished()
-
             print self.name + " Finished."
             self.running = False
                
