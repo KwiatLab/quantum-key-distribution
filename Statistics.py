@@ -399,7 +399,6 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
     binary_entropies = {}
-    print "m here"
 #================FOR LOOP STARTS (recommended to go 1-13======================================================================================================================
     for frame_size in 2**array(range(1,13)):
         print "\n"

@@ -12,12 +12,12 @@ def plotAutocorrelations(bufAlice,time=1.0,bins=2000,ymax=None):
     length=bins/2*bufAlice.resolution
     dist=(array(range(bins))-bins/2)*bufAlice.resolution
     f,ax=subplots(bufAlice.channels,sharex=True)
-    for number_of_parity_check_eqns in range(bufAlice.channels):
-        ax[number_of_parity_check_eqns].set_ylabel("Channel "+str(number_of_parity_check_eqns+1))
+    for i in range(bufAlice.channels):
+        ax[i].set_ylabel("Channel "+str(i+1))
         if (ymax):
-            ax[number_of_parity_check_eqns].set_ylim((0,ymax))
-            ax[number_of_parity_check_eqns].set_xlim((dist[0],dist[-1]))
-        ax[number_of_parity_check_eqns].plot(dist,bufAlice.correlate(time,length,bins,number_of_parity_check_eqns,number_of_parity_check_eqns))
+            ax[i].set_ylim((0,ymax))
+            ax[i].set_xlim((dist[0],dist[-1]))
+        ax[i].plot(dist,bufAlice.correlate(time,length,bins,i,i))
     ax[0].set_title("Autocorrelations Of Each Channel")
     ax[-1].set_xlabel("Time in Seconds")
     f.subplots_adjust(hspace=0)
@@ -33,15 +33,15 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
     dist=(array(range(bins))-bins/2)*bufAlice.resolution
     f,ax=subplots(len(channels1),sharex=True)
     plots = []
-    for number_of_parity_check_eqns in range(len(channels1)):
-        ax[number_of_parity_check_eqns].set_ylabel("Channel "+str(number_of_parity_check_eqns+1))
+    for i in range(len(channels1)):
+        ax[i].set_ylabel("Channel "+str(i+1))
         if (pulsebin > 0.0):
-            ax[number_of_parity_check_eqns].axvline(pulsebin/2)
-            ax[number_of_parity_check_eqns].axvline(-pulsebin/2)
-            ax[number_of_parity_check_eqns].axvline(3*pulsebin/2)
-            ax[number_of_parity_check_eqns].axvline(-3*pulsebin/2)
+            ax[i].axvline(pulsebin/2)
+            ax[i].axvline(-pulsebin/2)
+            ax[i].axvline(3*pulsebin/2)
+            ax[i].axvline(-3*pulsebin/2)
         for j in range(len(channels2)):
-            cor=bufAlice.correlate(time,length,bins,channels1[number_of_parity_check_eqns],channels2[j],channel1delay=delays1[number_of_parity_check_eqns],channel2delay=delays2[j])
+            cor=bufAlice.correlate(time,length,bins,channels1[i],channels2[j],channel1delay=delays1[i],channel2delay=delays2[j])
             
             #Now, we have a way to fit to gaussian - set initial parameters
             popt=[max(cor),argmax(cor),3]
@@ -53,11 +53,11 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
             except:
                 popt=[max(cor),argmax(cor),3]
             #
-            if (number_of_parity_check_eqns==0):
-                plots.append(ax[number_of_parity_check_eqns].plot(dist,cor,linewidth=2,label=r"Channel "+str(j+1) + r" ($\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps)"))
+            if (i==0):
+                plots.append(ax[i].plot(dist,cor,linewidth=2,label=r"Channel "+str(j+1) + r" ($\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps)"))
             else:
-                plots.append(ax[number_of_parity_check_eqns].plot(dist,cor,linewidth=2,label=r"$\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps"))
-            ax[number_of_parity_check_eqns].legend()
+                plots.append(ax[i].plot(dist,cor,linewidth=2,label=r"$\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps"))
+            ax[i].legend()
     ax[0].set_title("Correlations Between Alice and Bob's Channels")
     ax[-1].set_xlabel("Time in Seconds")
     f.subplots_adjust(hspace=0)
@@ -67,14 +67,14 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
 def polarizationPlot(polA,polB):
     figure()
     suptitle("Polarization Channels")
-    for number_of_parity_check_eqns in range(4):
-        subplot(2,2,number_of_parity_check_eqns+1)
-        title("Channel "+str(1+number_of_parity_check_eqns))
+    for i in range(4):
+        subplot(2,2,i+1)
+        title("Channel "+str(1+i))
 
-        v = polA[polB==number_of_parity_check_eqns]
+        v = polA[polB==i]
 
         bar([1,2,3,4],array([sum(v==0),sum(v==1),sum(v==2),sum(v==3)],dtype=double)/float(len(v)))
-        #if (number_of_parity_check_eqns==0):
+        #if (i==0):
         #    legend()
     show()
 

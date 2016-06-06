@@ -65,12 +65,12 @@ def getDelays(bufAlice,channels1,channels2,initialdelay2=0.0,delays1=None,delays
         delays2=ones(len(channels2))*initialdelay2
 
     #First set all of channels2 delays
-    for number_of_parity_check_eqns in range(len(delays2)):
-        delays2[number_of_parity_check_eqns] += getDelay(bufAlice,channels1[0],channels2[number_of_parity_check_eqns],delays1[0],delays2[number_of_parity_check_eqns],delaymax=delaymax,time=time)
+    for i in range(len(delays2)):
+        delays2[i] += getDelay(bufAlice,channels1[0],channels2[i],delays1[0],delays2[i],delaymax=delaymax,time=time)
 
     #Next, set all of delays for channels1
-    for number_of_parity_check_eqns in range(1,len(delays1)):
-        delays1[number_of_parity_check_eqns] -= getDelay(bufAlice,channels1[number_of_parity_check_eqns],channels2[0],delays1[number_of_parity_check_eqns],delays2[0])
+    for i in range(1,len(delays1)):
+        delays1[i] -= getDelay(bufAlice,channels1[i],channels2[0],delays1[i],delays2[0])
 
     return (delays1,delays2)
 """
