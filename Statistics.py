@@ -61,7 +61,6 @@ def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_
     for number_of_parity_check_eqns in range(number_of_timetags):
         bin_number = around(timetags[number_of_parity_check_eqns] / BINSIZE)
         bin_string[number_of_parity_check_eqns]+=bin_number
-    print "Im here"
 
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
