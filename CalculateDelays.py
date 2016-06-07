@@ -27,16 +27,28 @@ def gauss(x, *p):
 #Also, just assume that max one is the correct delay - a gaussian fit might be better
 #   for certain things
 def getDelay(bufAlice,channel1,channel2,initialdelay1=0.0,initialdelay2=0.0,delaymax = 0.0000001,time=1.0):
+#   How many bins are in one coincidence window
     bins = int(delaymax/bufAlice.resolution)*2
+    print "bins:",bins
     corr = bufAlice.correlate(time,delaymax,bins,channel1,channel2,channel1delay=initialdelay1,channel2delay=initialdelay2)
     
     #Now, we have a way to fit to gaussian - set initial parameters
     mu = argmax(corr)
     sigma = 5
     A = max(corr)
-    popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
-    print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
-    return (popt[1]-len(corr)/2)*bufAlice.resolution
+    
+    try:
+        popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
+        print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
+        return (popt[1]-len(corr)/2)*bufAlice.resolution
+    except:
+        print "Fitting Gaussian for ",channel1,"-",channel2,"FAILED"
+        return (mu-len(corr)/2)*bufAlice.resolution
+
+#     
+#     popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
+#     print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
+#     return (popt[1]-len(corr)/2)*bufAlice.resolution
 
 
 #This function cannot be used on huge buffers, since it creates a copy of the entire dataset
@@ -56,7 +68,7 @@ def getPossibleInitialDelays(bufAlice,syncChannel1,syncChannel2):
         delays.append(singles[i2]-singles[i1])
 
     return delays
-
+# delaysmax is windowradius
 def getDelays(bufAlice,channels1,channels2,initialdelay2=0.0,delays1=None,delays2=None,delaymax=0.0000001,time=1.0):
 
     if (delays1==None):

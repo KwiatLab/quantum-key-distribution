@@ -65,7 +65,7 @@ class PartyThread(threading.Thread):
             self.buffer = ttag.TTBuffer(buf_num,create=True,datapoints = len(self.ttags))
             self.buffer.resolution = self.resolution
             self.buffer.channels = max(self.channels)+1
- 
+            print self.channels
          
 #             indexes_of_order = self.ttags.argsort(kind = "quicksort")
 #             self.channels = take(self.channels,indexes_of_order)

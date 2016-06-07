@@ -50,7 +50,7 @@ if (__name__ == '__main__'):
     
     alice_raw_filename = sys.argv[1]
     name = sys.argv[2]
-    resolution = 5e-11
+    resolution = 1.5625e-10
     
     alice_bob_ch_ttag =read_raw_file(alice_raw_filename,name ,resolution)
     saveprep("06032014_maxpower",alice_bob_ch_ttag[1],alice_bob_ch_ttag[0])

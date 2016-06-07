@@ -15,7 +15,7 @@ from matplotlib import *
 from itertools import product
 import Statistics
 from Statistics import calculateStatistics
-
+from DataProcessing import *
 def loadprep(fname):
     # print("Loading Alice and Bob arrays")
 
@@ -28,128 +28,243 @@ def loadprep(fname):
     return (alice,bob,alice_pol,bob_pol)
 
 if (__name__ == '__main__'):
-    loadedData = loadprep("06032014_maxpower") 
-    resolution = 5e-11
+    loadedData = loadprep("06032014_maxpower")
+    
+    
+#     resolution = 1.5625e-10
+    resolution = 260.41e-12
 #     print loadedData[0][:100]
     numpy.set_printoptions(edgeitems = 100)
+#==================================TRIAL FOR DELAYS==================================================
+#     alice_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
+#     bob_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
+#     (aliceChannels,aliceTtags) = read_raw_file(alice_raw_filename, "alice", resolution)
+#     
+#     (bobChannels,bobTtags) = read_raw_file(bob_raw_filename, "bob", resolution)
+# 
+#     
+#     aliceTtags = aliceTtags[:20]
+#     aliceChannels = aliceChannels[:20]
+# 
+#     bobTtags = bobTtags[:20]
+#     bobChannels = bobChannels[:20]
+# 
+#     
+#     print "A: ",aliceChannels
+#     print "B: ",bobChannels
+#     
+#     print "A: ",aliceTtags
+#     print "B: ",bobTtags 
+#     buf_num = ttag.getfreebuffer()
+#     bufAlice = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e4))
+#     bufAlice.resolution = resolution
+#     bufAlice.channels = 6
+#     bufAlice.addarray(aliceChannels,aliceTtags)
+#     print bufAlice.singles((aliceTtags[-1])*bufAlice.resolution)
+# 
+#     buf_num = ttag.getfreebuffer()
+#     bufBob = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e4))
+#     bufBob.resolution = resolution
+#     bufBob.channels = 6
+#     bufBob.addarray(bobChannels,bobTtags)
+#     #if subtract one from ttag to get rid of the error doesnt count first ttag so this's correct
+#     print bufBob.singles((bobTtags[-1])*bufBob.resolution) 
+#     
+#     
+#     A_B_timetags = concatenate([aliceTtags,bobTtags])
+#     A_B_channels = concatenate([aliceChannels,bobChannels])
+# 
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)
+#     print "A&B: ",A_B_channels
+#     print "A&B: ",A_B_timetags
+#     
+#     buf_num = ttag.getfreebuffer()
+#     buf = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e4))
+#     buf.resolution = resolution
+#     buf.channels = max(A_B_channels)+1
+#     buf.addarray(A_B_channels,A_B_timetags)
+# 
+#     
+#     channels2=channels1 = [2,3,4,5]
+#     coincidence_window_radius = 1.9e-7
+#     (d1,d2) = getDelays(buf,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buf.resolution)
+#     print (d1/buf.resolution,d2/buf.resolution)
+#     
+# #     graphs.plotABCorrelations(buf,channels1,channels2)
+#     d1 = (d1/buf.resolution).astype(uint64)
+# 
+#     d2 = (d2/buf.resolution).astype(uint64)
+#     print("- Applying Delays")
+#     for i in range(len(channels1)):
+#         A_B_timetags[A_B_channels==channels1[i]]-=d1[i]
+#     for i in range(len(channels2)):
+#         A_B_timetags[A_B_channels==channels2[i]]-=d2[i]
+#         
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)    
+#     print "Printing timetags after applying delays and sorting: ", A_B_timetags,A_B_channels
+#     
+#     buf_num = ttag.getfreebuffer()
+#     bufDelays = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e4))
+#     bufDelays.resolution = resolution
+#     bufDelays.channels = max(A_B_channels)+1
+#     bufDelays.addarray(A_B_channels,A_B_timetags)
+#     
+#     graphs.plotABCorrelations(bufDelays,channels1,channels2)
+# =========================================================================================================
 
-    #adding Alice data to buffer 
-    buf_num = ttag.getfreebuffer()
-    # print("Opening Buffer",buf_num)
-    bufAlice = ttag.TTBuffer(buf_num,create=True,datapoints = len(loadedData[0]))
-    # print("Setting Properties")
-    bufAlice.resolution = resolution
-    bufAlice.channels = max(loadedData[2])+1
-    # print("->Resolution:",bufAlice.resolution)
-    # print("->Channels:",bufAlice.channels)
-    
+#     #adding Alice data to buffer 
+#     buf_num = ttag.getfreebuffer()
+#     # print("Opening Buffer",buf_num)
+#     bufAlice = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+#     # print("Setting Properties")
+#     bufAlice.resolution = resolution
+#     bufAlice.channels = max(loadedData[2])+1
+#     # print("->Resolution:",bufAlice.resolution)
+#     # print("->Channels:",bufAlice.channels)
+#     
     aliceTtags = loadedData[0]
     aliceChannels =loadedData[2]
-
+# 
     bobTtags = loadedData[1]   
     bobChannels =loadedData[3]
-
-    # make them of equal size
+# 
+#     # make them of equal size
     if (len(aliceTtags) > len(bobTtags)):
         aliceTtags    = aliceTtags[:len(bobTtags)]
         aliceChannels = aliceChannels[:len(bobChannels)]
     else:
         bobTtags    = bobTtags[:len(aliceTtags)]
         bobChannels = bobChannels[:len(aliceChannels)]
-
+# 
     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
     aliceChannels = take(aliceChannels,indexes_of_order)
     aliceTtags = take(aliceTtags,indexes_of_order)
-    #------------------------------------
-    # print("Alice ready. Adding Alice Data to Buffer")
-    bufAlice.addarray(aliceChannels,aliceTtags)
-    # print ('->>>bufAlice[:]', bufAlice[:])
-
-    #creating Bob buffer ---------------------------------------------------------------------------
-    # print "Creating Bob Buffer"
-    buf_num = ttag.getfreebuffer()
-
-    # print("Opening Buffer",buf_num)
-
-    bufBob = ttag.TTBuffer(buf_num,create=True,datapoints = len(loadedData[1]))
- 
-    # print("Setting Properties")
-    bufBob.resolution = resolution
-    bufBob.channels = max(loadedData[3])+1
-    # print("->Resolution:",bufBob.resolution)
-    # print("->Channels:",bufBob.channels)
-    
-    #sorting Bob just in case ttags----------
-    # print ("Sorting Bob Tags")
+#     #------------------------------------
+#     # print("Alice ready. Adding Alice Data to Buffer")
+#     bufAlice.addarray(aliceChannels,aliceTtags)
+#     # print ('->>>bufAlice[:]', bufAlice[:])
+# 
+#     #creating Bob buffer ---------------------------------------------------------------------------
+#     # print "Creating Bob Buffer"
+#     buf_num = ttag.getfreebuffer()
+# 
+#     # print("Opening Buffer",buf_num)
+#     
+#     bufBob = ttag.TTBuffer(buf_num,create=True,datapoints = len(loadedData[1]))
+#  
+#     # print("Setting Properties")
+#     bufBob.resolution = resolution
+#     bufBob.channels = max(loadedData[3])+1
+#     # print("->Resolution:",bufBob.resolution)
+#     # print("->Channels:",bufBob.channels)
+#     
+#     #sorting Bob just in case ttags----------
+#     # print ("Sorting Bob Tags")
     indexes_of_order = bobTtags.argsort(kind = "mergesort")
-    
+#     
     bobChannels = take(bobChannels,indexes_of_order)
     bobTtags = take(bobTtags,indexes_of_order)
-    
-    #------------------------------------
-    #adding Bob data to buffer
-    # print("Adding Bob Data to Buffer")
-    '''
-    TO DO: figuree out why this line messes eveyrhing up. Probably getFreeBuffer doesnt work properly
-    '''
+#     
+#     #------------------------------------
+#     #adding Bob data to buffer
+#     # print("Adding Bob Data to Buffer")
+#     '''
+#     TO DO: figuree out why this line messes eveyrhing up. Probably getFreeBuffer doesnt work properly
+#     '''
 #     bufBob.addarray(bobChannels,bobTtags)
-    
-    # print ('->>>bufAlice[:]', bufBob[:])
-    # print "--------------------WILL BE CALCULATING STATISTICS-------------------------------------------------"
-    # printing statistics -------------------------------------------------------------------------------
-#     print aliceTtags[:100]
-#     calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
-    # print "-------------------END OF STATISTICS---------------------------------------------------------------"
-    #adding buffer with ABdata---------------------------------------------------------------------------
-    # print("Combining ALICE and BOB and adding to new buffer")
-    # print aliceTtags.dtype
+#     
+#     # print ('->>>bufAlice[:]', bufBob[:])
+#     # print "--------------------WILL BE CALCULATING STATISTICS-------------------------------------------------"
+#     # printing statistics -------------------------------------------------------------------------------
+# #     print aliceTtags[:100]
+# #     calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
+#     # print "-------------------END OF STATISTICS---------------------------------------------------------------"
+#     #adding buffer with ABdata---------------------------------------------------------------------------
+#     # print("Combining ALICE and BOB and adding to new buffer")
+#     # print aliceTtags.dtype
     A_B_timetags = concatenate([aliceTtags,bobTtags])
     A_B_channels = concatenate([aliceChannels,bobChannels])
-    # print A_B_timetags
-    # print A_B_channels
-    
+#     # print A_B_timetags
+#     # print A_B_channels
+#     
     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
     A_B_channels = take(A_B_channels,indexes_of_order)
     A_B_timetags = take(A_B_timetags,indexes_of_order)
-    # print A_B_channels
 
-    buf_num = ttag.getfreebuffer()
-    print("Opening Buffer",buf_num)
-    buf = ttag.TTBuffer(buf_num,create=True,datapoints = len(A_B_channels))
     
-    # print("Setting Properties")
+    buf_num = ttag.getfreebuffer()
+    buf = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
     buf.resolution = resolution
     buf.channels = max(A_B_channels)+1
-    # print("->Resolution:",buf.resolution)
-    # print("->Channels:",buf.channels)
-    
-    # print("Adding Data to Buffer")
     buf.addarray(A_B_channels,A_B_timetags)
-    # Coincidences ----------------------------------------------------------------------------
-    # print("\nCoincidence MatrixA:")
-    # print (bufAlice.coincidences(0.1, 1e-5))
     
-    # print("\nCoincidence MatrixB:")
-    # print (bufBob.coincidences(0.1, 1e-5))
-    # print("\nCoincidence MatrixAB:")
-    # print (buf.coincidences(0.1, 1e-5))
     
-    #-----------------------------Delays part -------------------------------------------------------------
-    # print ("Calculating delays")
+    channels2=channels1 = [2,3,4,5]
+#    1.9e-7 biggest u can make and still get correlatiosnthis corresponds to 1458 bins in diameter of coincidence window
+    coincidence_window_radius = 1.9e-7
+    (d1,d2) = getDelays(buf,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buf.resolution)
+    print (d1/buf.resolution,d2/buf.resolution)
+     
+#     graphs.plotABCorrelations(buf,channels1,channels2)
+    d1 = (d1/buf.resolution).astype(uint64)
+    d2 = (d2/buf.resolution).astype(uint64)
+    
+    print("- Applying Delays")
+    for i in range(len(channels1)):
+        A_B_timetags[A_B_channels==channels1[i]]-=d1[i]
+    for i in range(len(channels2)):
+        A_B_timetags[A_B_channels==channels2[i]]-=d2[i]
+         
+    indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+    A_B_channels = take(A_B_channels,indexes_of_order)
+    A_B_timetags = take(A_B_timetags,indexes_of_order)    
+
+    buf_num = ttag.getfreebuffer()
+    bufDelays = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+    bufDelays.resolution = resolution
+    bufDelays.channels = max(A_B_channels)+1
+    bufDelays.addarray(A_B_channels,A_B_timetags)
+     
+    graphs.plotABCorrelations(bufDelays,channels1,channels2)
+
+
+#     # Coincidences ----------------------------------------------------------------------------
+#     # print("\nCoincidence MatrixA:")
+#     # print (bufAlice.coincidences(0.1, 1e-5))
 #     
-#     channels1=[0,1,2,3,4,5]
-#     channels2=[0,1,2,3,4,5]
+#     # print("\nCoincidence MatrixB:")
+#     # print (bufBob.coincidences(0.1, 1e-5))
+#     # print("\nCoincidence MatrixAB:")
+#     # print (buf.coincidences(0.1, 1e-5))
+#     
+#     #-----------------------------Delays part -------------------------------------------------------------
+#     # print ("Calculating delays")
 #      
-#     d1,d2 = getDelays(buf,channels1,channels2,time=1.5)
+#     channels1=[2,3,4,5]
+#     channels2=[2,3,4,5]
+#     coincidence_window_radius = 6e-8
+#     binsize = 260.41e-12
+# #     d = getPossibleInitialDelays(buf,0,6)
+#     print "->>>>>",aliceChannels,bobChannels, aliceTtags*resolution
+#     d1,d2 = getDelays(buf,channels1,channels2,delaymax=coincidence_window_radius,time=1.0)
 #     print ("d1->>>>",d1)
 #     print ("d2->>>>",d2)
 #     # print("Second Round of Delay finding")
-#     d1,d2 = getDelays(buf,channels1,channels2,delays1=d1,delays2=d2,delaymax=buf.resolution*100)
-#     print ("d1->>>>",d1)
-#     print ("d2->>>>",d2)
+# #     d1,d2 = getDelays(buf,channels1,channels2,delays1=d1,delays2=d2,delaymax=buf.resolution*100)
+# #     print ("d1->>>>",d1)
+# #     print ("d2->>>>",d2)
 #     print("Preparing Correlation Plot")
-#     graphs.plotABCorrelations(buf,channels1,channels2,d1,d2)
+#     bins = int(coincidence_window_radius/bufAlice.resolution)*2
+#     print "bins"
+# #   OLD  graphs.plotABCorrelations(buf,channels1,channels2,d1,d2)
+#     graphs.plotABCorrelations(buf,channels1,channels2,d1,d2,bins,pulsebin=binsize)
+# #     buf.__del__()
 #     user=input("Looks good? (y/n):")
+#     buf.__del__()
 #     if (user=="y"):
 #         print("Creating Syncd Data...")
 #         channels,timetags = buf[:]
@@ -159,9 +274,8 @@ if (__name__ == '__main__'):
 #         timetags[channels==channels1[i]]-=d1[i]
 #     for i in range(len(channels2)):
 #         timetags[channels==channels2[i]]-=d2[i]
-# #  
 #     print "Printing timetags after applying delays: ", timetags
-    
+#     
     # print("- Extracting Alice and Bob")
 #     allWanted = (channels==channels1[0])
 #     for i in range(1,len(channels1)):

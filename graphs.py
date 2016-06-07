@@ -28,7 +28,7 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
         delays1=zeros(len(channels1))
     if (delays2==None):
         delays2=zeros(len(channels2))
-
+        
     length = bins/2*bufAlice.resolution
     dist=(array(range(bins))-bins/2)*bufAlice.resolution
     f,ax=subplots(len(channels1),sharex=True)
