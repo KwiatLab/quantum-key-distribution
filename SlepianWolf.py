@@ -572,7 +572,7 @@ class swnb_node(sw_mathc):
         
 #         print type(self),"Number of connections",len(self.connections)
         if (len(self.connections)==0):
-            self.err("\t\t\t\t\t WARNING: Node not connected!")
+            self.err("WARNING: Node not connected!")
         #elif (len(self.connections)<2):
         #    print "Warning: Node has <2 connections!"
         self.inputMatrix = ones((alphabet,len(self.connections)))
@@ -874,10 +874,10 @@ class SW_LDPC(object):
     
     #Prints the current iteration's results
     def printResults(self):
-        print self.iteration,"\t| P:",self.sequenceFailedParities,
+        print self.iteration,"| P:",self.sequenceFailedParities,
         errorNumber = self.distanceFromCorrect()
         if (errorNumber!=None):
-            print "\tE:",errorNumber
+            print "E:",errorNumber
         else:
             print
         

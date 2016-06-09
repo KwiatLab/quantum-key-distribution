@@ -12,7 +12,8 @@ import ttag
 from multiprocessing import *
 from subprocess import Popen, list2cmdline
 from Statistics import *
-
+from ParityCheckMatrixGen import gallager_matrix
+from SlepianWolf import encode
 import timeit
 
 def make_equal_size(alice_thread,bob_thread):
@@ -28,14 +29,32 @@ def loadprep(fname,name):
     alice = load("./resultsLaurynas/resultsLaurynas/"+name+"Ttags_"+fname+".npy")
     alice_pol=load("./resultsLaurynas/resultsLaurynas/"+name+"Channels_"+fname+".npy")
     return (alice,alice_pol)
-
+def LDPC_encode(party,column_weight = 3,number_parity_edges = 6):
+    total_string_length = len(party.received_string)
+    
+    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
+    party.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
+    
+    party.syndromes=encode(party.parity_matrix,party.non_zero_positions[:len(party.received_string)],party.frame_size)
+ 
+def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
+    party.sent_string = party.non_zero_positions[:len(party.received_string)]
+    
+    transition_matrix = transitionMatrix_data2(party.sent_string,party.received_string,party.frame_size)
+    prior_probability_matrix = sequenceProbMatrix(party.sent_string,transition_matrix)
+    belief_propagation_system = SW_LDPC(party.parity_matrix, party.syndromes, prior_probability_matrix, original=alice_thread.sent_string,decoder=decoder)
+    
+    belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
+    
 class PartyThread(threading.Thread):
-    def __init__(self, resolution, raw_filename,name):
+    def __init__(self, resolution, raw_filename,name,channelArray):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
         self.resolution = resolution
         self.raw_file_name = raw_filename
+        self.delays = None
+        self.channelArray = channelArray
         self.ttags = None
         self.channels = None
         self.buffer = None
@@ -48,6 +67,9 @@ class PartyThread(threading.Thread):
         self.received_string = None
         self.error_rate = None
         self.race_flag = False
+        self.parity_matrix = None
+        self.syndromes = None
+        self.sent_string = None
         self.event.set()
     def do_clear(self):
         self.event.clear()
@@ -60,6 +82,17 @@ class PartyThread(threading.Thread):
             print self.name.upper()+": Loading .npy data"
             (self.ttags,self.channels) = loadprep("06032014_maxpower",self.name)
 #           TODO: Add delays here
+            print "Loading delays"
+            self.delays = load("./resultsLaurynas/Delays/"+self.name+"Delay.npy")
+            print self.delays
+            self.ttags=self.ttags.astype(int64)
+            print "Applying Delays"
+            for i in range(len(self.channelArray)):
+                self.ttags[self.channels==self.channelArray[i]]-=self.delays[i]
+            indexes_of_order = self.ttags.argsort(kind = "mergesort")
+            self.channels = take(self.channels,indexes_of_order)
+            self.ttags = take(self.ttags,indexes_of_order)      
+
             print self.name.upper() +" FINISHED with data. Will notify main.\n"        
             buf_num = ttag.getfreebuffer() 
             self.buffer = ttag.TTBuffer(buf_num,create=True,datapoints = len(self.ttags))
@@ -93,9 +126,11 @@ class PartyThread(threading.Thread):
             while main_event.is_set():
                 pass
             print self.name.upper()+": I was released and will do error calc.\n"    
-            self.error_rate = sum(self.received_string == self.non_zero_positions[:len(self.received_string)])/len(self.received_string)
-            print self.name.upper() + " Finished with error rate: ",self.error_rate,"\n"
-            
+#             print self.received_string,self.non_zero_positions[:len(self.received_string)]
+            self.sent_string = self.non_zero_positions[:len(self.received_string)]
+            self.error_rate = 1-float(sum(self.received_string == self.sent_string))/len(self.received_string)
+            print self.name.upper() + " error rate: ",self.error_rate,"\n"
+                
             
             self.running = False
                
@@ -107,15 +142,15 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 100)
     resolution = 5e-11
-    
+    aliceChannelArray = bobChannelArray = [2,3,4,5]
     alice_event = threading.Event()
     alice_event.set()
    
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, alice_raw_filename, "alice")
-    bob_thread = PartyThread(resolution, bob_raw_filename,"bob")
+    alice_thread = PartyThread(resolution, alice_raw_filename, "alice",channelArray=aliceChannelArray)
+    bob_thread = PartyThread(resolution, bob_raw_filename,"bob", channelArray=bobChannelArray)
     start = timeit.default_timer()  
    
     main_event = threading.Event()
@@ -190,6 +225,15 @@ if __name__ == '__main__':
     bob_thread.received_string = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
     print "Succesfully ANNOUNCED will release threads", len(alice_thread.non_zero_positions),len(alice_thread.received_string)
     main_event.clear()
+    
+    LDPC_encode(alice_thread)
+    
+#=============Sending syndrome values and parity check matrix?=====
+    bob_thread.syndromes = alice_thread.syndromes
+    bob_thread.parity_matrix = alice_thread.parity_matrix
+#==================================================================
+    
+    LDPC_decode(bob_thread)
         
 #     stop = timeit.default_timer()
 #     print stop - start 

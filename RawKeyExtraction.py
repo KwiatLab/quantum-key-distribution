@@ -16,6 +16,7 @@ from itertools import product
 import Statistics
 from Statistics import calculateStatistics
 from DataProcessing import *
+from Delays import calculate_delays
 def loadprep(fname):
     # print("Loading Alice and Bob arrays")
 
@@ -130,7 +131,13 @@ if (__name__ == '__main__'):
 # 
     bobTtags = loadedData[1]
     bobChannels =loadedData[3]
-# 
+    
+    channels2=channels1 = [2,3,4,5]
+#    1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
+#    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
+    coincidence_window_radius = 1.9e-7
+    
+
 #     # make them of equal size
     if (len(aliceTtags) > len(bobTtags)):
         aliceTtags    = aliceTtags[:len(bobTtags)]
@@ -138,7 +145,7 @@ if (__name__ == '__main__'):
     else:
         bobTtags    = bobTtags[:len(aliceTtags)]
         bobChannels = bobChannels[:len(aliceChannels)]
-# 
+
     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
     aliceChannels = take(aliceChannels,indexes_of_order)
     aliceTtags = take(aliceTtags,indexes_of_order)
@@ -167,7 +174,8 @@ if (__name__ == '__main__'):
 #     
     bobChannels = take(bobChannels,indexes_of_order)
     bobTtags = take(bobTtags,indexes_of_order)
-#     
+    calculate_delays(aliceTtags, aliceChannels, bobTtags, bobChannels, resolution, coincidence_window_radius, channels1) 
+   
 #     #------------------------------------
 #     #adding Bob data to buffer
 #     # print("Adding Bob Data to Buffer")
@@ -190,6 +198,8 @@ if (__name__ == '__main__'):
 #     # print A_B_timetags
 #     # print A_B_channels
 #     
+
+
     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
     A_B_channels = take(A_B_channels,indexes_of_order)
     A_B_timetags = take(A_B_timetags,indexes_of_order)
@@ -206,63 +216,65 @@ if (__name__ == '__main__'):
 #    1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
     coincidence_window_radius = 1.9e-7
-    (d1,d2) = getDelays(buf,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buf.resolution)
-    print (d1/buf.resolution,d2/buf.resolution)
+    
+#     THIS IS ONLY TO SAVE DELAYS TO FILE FOR "System.py"
      
-#     graphs.plotABCorrelations(buf,channels1,channels2)
-    d1 = (d1/buf.resolution).astype(uint64)
-    d2 = (d2/buf.resolution).astype(uint64)
-    
-    print("- Applying Delays")
-    for i in range(len(channels1)):
-        A_B_timetags[A_B_channels==channels1[i]]-=d1[i]
-        aliceTtags[aliceChannels== channels1[i]]-=d1[i]
-
-    for i in range(len(channels2)):
-        A_B_timetags[A_B_channels==channels2[i]]-=d2[i]
-        aliceTtags[bobChannels == channels2[i]]-=d2[i]
-        
-    indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
-    A_B_channels = take(A_B_channels,indexes_of_order)
-    A_B_timetags = take(A_B_timetags,indexes_of_order)      
-    
-    
-    indexes_of_order = aliceTtags.argsort(kind = "mergesort")
-    aliceChannels = take(aliceChannels,indexes_of_order)
-    aliceTtags = take(aliceTtags,indexes_of_order)
-
-    indexes_of_order = bobTtags.argsort(kind = "mergesort")
-    bobChannels = take(bobChannels,indexes_of_order)
-    bobTtags = take(bobTtags,indexes_of_order)  
-  
-    print "A: ",aliceTtags,"\n"
-    print "B: ",bobTtags,"\n"
-    print "A&B",A_B_timetags,"\n"
-    
-    indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
-    A_B_channels = take(A_B_channels,indexes_of_order)
-    A_B_timetags = take(A_B_timetags,indexes_of_order)    
-
-    A_B_D_timetags = concatenate([aliceTtags,bobTtags])
-    A_B_D_channels = concatenate([aliceChannels,bobChannels])
-    indexes_of_order = A_B_D_timetags.argsort(kind = "mergesort")
-    A_B_D_channels = take(A_B_D_channels,indexes_of_order)
-    A_B_D_timetags = take(A_B_D_timetags,indexes_of_order)
-
-    
-    buf_num = ttag.getfreebuffer()
-    bufAD = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
-    bufAD.resolution = resolution
-    bufAD.channels = max(A_B_D_channels)+1
-    bufAD.addarray(A_B_D_channels,A_B_D_timetags)
-
-    buf_num = ttag.getfreebuffer()
-    bufDelays = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
-    bufDelays.resolution = resolution
-    bufDelays.channels = max(A_B_channels)+1
-    bufDelays.addarray(A_B_channels,A_B_timetags)
-     
-    graphs.plotABCorrelations(bufAD,channels1,channels2)
+#     (d1,d2) = getDelays(buf,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buf.resolution)
+#     print (d1/buf.resolution,d2/buf.resolution)
+#      
+# #     graphs.plotABCorrelations(buf,channels1,channels2)
+#     d1 = (d1/buf.resolution).astype(uint64)
+#     d2 = (d2/buf.resolution).astype(uint64)
+#     print("- Applying Delays")
+#     for i in range(len(channels1)):
+#         A_B_timetags[A_B_channels==channels1[i]]-=d1[i]
+#         aliceTtags[aliceChannels== channels1[i]]-=d1[i]
+# 
+#     for i in range(len(channels2)):
+#         A_B_timetags[A_B_channels==channels2[i]]-=d2[i]
+#         aliceTtags[bobChannels == channels2[i]]-=d2[i]
+#         
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)      
+#     
+#     
+#     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
+#     aliceChannels = take(aliceChannels,indexes_of_order)
+#     aliceTtags = take(aliceTtags,indexes_of_order)
+# 
+#     indexes_of_order = bobTtags.argsort(kind = "mergesort")
+#     bobChannels = take(bobChannels,indexes_of_order)
+#     bobTtags = take(bobTtags,indexes_of_order)  
+#   
+#     print "A: ",aliceTtags,"\n"
+#     print "B: ",bobTtags,"\n"
+#     print "A&B",A_B_timetags,"\n"
+#     
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)    
+# 
+#     A_B_D_timetags = concatenate([aliceTtags,bobTtags])
+#     A_B_D_channels = concatenate([aliceChannels,bobChannels])
+#     indexes_of_order = A_B_D_timetags.argsort(kind = "mergesort")
+#     A_B_D_channels = take(A_B_D_channels,indexes_of_order)
+#     A_B_D_timetags = take(A_B_D_timetags,indexes_of_order)
+# 
+#     
+#     buf_num = ttag.getfreebuffer()
+#     bufAD = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+#     bufAD.resolution = resolution
+#     bufAD.channels = max(A_B_D_channels)+1
+#     bufAD.addarray(A_B_D_channels,A_B_D_timetags)
+# 
+#     buf_num = ttag.getfreebuffer()
+#     bufDelays = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+#     bufDelays.resolution = resolution
+#     bufDelays.channels = max(A_B_channels)+1
+#     bufDelays.addarray(A_B_channels,A_B_timetags)
+#      
+#     graphs.plotABCorrelations(bufAD,channels1,channels2)
 
 
 #     # Coincidences ----------------------------------------------------------------------------
