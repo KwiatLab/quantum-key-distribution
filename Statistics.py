@@ -51,16 +51,18 @@ from itertools import *
 
 #Assumes that the person's data is ordered
 
-def create_binary_string_from_laser_pulses(timetags, binsize = 260.41, relative_unit = 78.125):
+def create_binary_string_from_laser_pulses(timetags, coincidence_window_radius, resolution):
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
-    BINSIZE = around(binsize/relative_unit)
+#     print "timetags",timetags
+    length_in_bins = int(coincidence_window_radius/resolution)*2
+    print "length in bins", length_in_bins
     number_of_timetags = len(timetags)
     bin_string = zeros(number_of_timetags,dtype=uint64)
 
 
-    for number_of_parity_check_eqns in range(number_of_timetags):
-        bin_number = around(timetags[number_of_parity_check_eqns] / BINSIZE)
-        bin_string[number_of_parity_check_eqns]+=bin_number
+    for i in range(number_of_timetags):
+        bin_number = around(timetags[i] / length_in_bins)
+        bin_string[i]+=bin_number
 
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
@@ -389,14 +391,14 @@ def resequence(locations,occupancies,frame_size):
     return actual_binary_string_bool
 
 
-def calculateStatistics(alice,bob,alice_pol,bob_pol):
+def calculateStatistics(alice,bob,alice_pol,bob_pol,coincidence_window_radius,resolution):
     print "I entered"
     #saveprep("main_high",*prep())
     numpy.set_printoptions(edgeitems = 100) 
     
 
-    alice_binary_string_laser = create_binary_string_from_laser_pulses(alice)
-    bob_binary_string_laser = create_binary_string_from_laser_pulses(bob)
+    alice_binary_string_laser = create_binary_string_from_laser_pulses(alice,coincidence_window_radius,resolution)
+    bob_binary_string_laser = create_binary_string_from_laser_pulses(bob,coincidence_window_radius,resolution)
     binary_entropies = {}
 #================FOR LOOP STARTS (recommended to go 1-13======================================================================================================================
     for frame_size in 2**array(range(1,13)):
@@ -406,6 +408,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print "Calculating frame occupancies..."
         alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
         bob_frame_occupancies   = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
+#         print "--->",len(where(alice_frame_occupancies==1)),len(alice_binary_string_laser/frame_size),alice_frame_occupancies
+                         
         b_entropy_a = calculate_binary_single_entropy(alice_frame_occupancies, frame_size)
         b_entropy_b = calculate_binary_single_entropy(bob_frame_occupancies,frame_size)
         b_joint = joint_entropy(alice_frame_occupancies, bob_frame_occupancies)
@@ -413,126 +417,126 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol):
         print "BINARY SINGLE ENTROPY: \n\t",b_entropy_a,"\n\t",b_entropy_b,"\n\t",b_joint,'\n\t', b_shared
         
         binary_entropies[str(frame_size)] = b_shared
-        print("Calculating frame locations...")
-        # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
-        # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-        # print "Entropy using frame mapping: "
-        # print calculate_frame_entropy(alice_frame_locations, frame_size)
-
-        # not binary mapping_value but calculates way faster
-        print "Making datasets equal..."
-        alice_frame_locations = calculate_frame_locations_daniels_mapping(alice_binary_string_laser, alice_frame_occupancies, frame_size)
-        bob_frame_locations   = calculate_frame_locations_daniels_mapping(bob_binary_string_laser,bob_frame_occupancies,frame_size)
-        (alice_frame_occupancies,bob_frame_occupancies) = make_data_string_same_size(alice_frame_occupancies,bob_frame_occupancies)
-        (alice_frame_locations,bob_frame_locations) = make_data_string_same_size(alice_frame_locations,bob_frame_locations)
- 
-#===============================================================================================
-        
-        sys.stdout.flush()
-
-#==================DEALS WITH OCCUPANCIES > 1===================================================
-        # #2-1,2-2,etc:
-        # calculates where at least one of them has higher occupancy than one
-        occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
-
-        # takes frames which were non zero either in alice or bob data
-        alice_potential_non_zero_locations = alice_frame_locations[occupancy_grater_than_one]
-        bob_potential_non_zero_locations = bob_frame_locations[occupancy_grater_than_one]
-
-        alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
-        bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
-
-        actual_binary_string_bool_bob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
-        actual_binary_string_bool_alice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
-
-#===============================================================================================
-
-#===================DEALS WITH OCCUPANCIES == 1==================================================
-
-        mutual_frames_with_occupancy_one = logical_and(alice_frame_occupancies==1,bob_frame_occupancies==1)
-    
-        alice_non_zero_positions_in_frame = alice_frame_locations[mutual_frames_with_occupancy_one]
-        bob_non_zero_positions_in_frame   = bob_frame_locations[mutual_frames_with_occupancy_one]
-    
-        # ------------------Polarizations of nonzero elements ------------------------------------------------------------
-        # alice_pf = alice_p[mutual_frames_with_occupancy_one]
-        # bob_pf = bob_p[mutual_frames_with_occupancy_one]
-        # graphs.polarizationPlot(alice_pf,bob_pf)
-        # ----------------------------------------------------------------------------------------------------------------
-
-        print "Alice and Bob frame location DATA saved for LDPC procedure."
-        # fmt="%number_of_parity_check_eqns" saves signed decimal integers
-#         savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%number_of_parity_check_eqns")
-
-#==================CODE STATISTICS=================================================================================================
-
-        print "->Code statistics: "
-        sys.stdout.flush()
-    
-        print "Frame Occupancy: "
-        print "\tLength:",len(alice_frame_occupancies)
-        occ_number_of_coincidences = sum(bob_frame_occupancies==alice_frame_occupancies)
-        occ_coincidence_fraction = float(occ_number_of_coincidences)/len(bob_frame_occupancies)
-        print "\tNumber of coincidences:",occ_number_of_coincidences," with fraction of: ",occ_coincidence_fraction
-        print "\tError:",1-occ_coincidence_fraction
-    
-        print "Frame Location: "
-        print "\tLength:",len(bob_non_zero_positions_in_frame)
-        loc_number_of_coincidences = sum(alice_non_zero_positions_in_frame==bob_non_zero_positions_in_frame)
-        loc_coincidence_fraction = float(loc_number_of_coincidences)/len(bob_non_zero_positions_in_frame)
-        print "\tNumber of coincidences:",loc_number_of_coincidences,loc_coincidence_fraction
-        print "\tError:",1-loc_coincidence_fraction
-
-
-        if (any(alice_frame_occupancies > frame_size) or any(bob_frame_occupancies > frame_size)):
-            print "WARNING: Over the TOP!"
-
-        sys.stdout.flush()
-
-#==================2-x theory====================================================================================================
-
-        mutual_binary_string_bool = float(sum(logical_and(actual_binary_string_bool_alice,actual_binary_string_bool_bob)))
-        actual_binary_string_bob_prob_one = float(sum(actual_binary_string_bool_bob))/float(len(actual_binary_string_bool_bob))
-
-        multi_p1g1b = mutual_binary_string_bool/float(sum(actual_binary_string_bool_bob))
-        multi_p1a = float(sum(actual_binary_string_bool_alice))/float(len(actual_binary_string_bool_alice))
-
-        if(sum(actual_binary_string_bool_alice)!=0):
-            multi_p1g1a = mutual_binary_string_bool/float(sum(actual_binary_string_bool_alice))
-        else:
-            multi_p1g1a = mutual_binary_string_bool/float(1)
-
-        maxtag_a = alice[-1]
-        multi_bperf = maxtag_a/float(len(actual_binary_string_bool_bob))
-        print "MULTI"
-        print "Length:",len(actual_binary_string_bool_bob)
-        print "Ones in Alice:",sum(actual_binary_string_bool_alice),"Bob:",sum(actual_binary_string_bool_bob)
-        # print "Coincidences",mutual_binary_string_bool
-        print "p1",actual_binary_string_bob_prob_one,multi_p1a
-        print "p1g1",multi_p1g1b,multi_p1g1a
-        print "Number of original bits per multi:",multi_bperf
-        entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
-        multientropy = entropy_left/multi_bperf
-#===============================================================================================================================
- 
-        coincidence_rate_non_binary = sum(alice_non_zero_positions_in_frame == bob_non_zero_positions_in_frame)/len(alice_non_zero_positions_in_frame)
-#         mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
-#         print "Got bool array"
-#         mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
-#         print "Converting bool array"
-#         entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
-#=======================ENTROPY2 PARAMETERS=======================================================
-        same_timetags_for_both = intersect1d(alice,bob)    
-
-        p1a = float(len(alice))/alice[-1]
-        p1b = float(len(bob))/bob[-1] 
-
-        p1g1a = float(len(same_timetags_for_both))/len(alice)
-        p1g1b = float(len(same_timetags_for_both))/len(bob)
-
-        alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size, 1)
-        bob_occ_letter_probabilities = letter_probabilities(bob_frame_occupancies, frame_size, 1)
-        
+#         print("Calculating frame locations...")
+#         # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+#         # bob_frame_locations = calculate_frame_locations(bob_binary_string_laser,bob_frame_occupancies,frame_size)
+#         # print "Entropy using frame mapping: "
+#         # print calculate_frame_entropy(alice_frame_locations, frame_size)
+# 
+#         # not binary mapping_value but calculates way faster
+#         print "Making datasets equal..."
+#         alice_frame_locations = calculate_frame_locations_daniels_mapping(alice_binary_string_laser, alice_frame_occupancies, frame_size)
+#         bob_frame_locations   = calculate_frame_locations_daniels_mapping(bob_binary_string_laser,bob_frame_occupancies,frame_size)
+#         (alice_frame_occupancies,bob_frame_occupancies) = make_data_string_same_size(alice_frame_occupancies,bob_frame_occupancies)
+#         (alice_frame_locations,bob_frame_locations) = make_data_string_same_size(alice_frame_locations,bob_frame_locations)
+#  
+# #===============================================================================================
+#         
+#         sys.stdout.flush()
+# 
+# #==================DEALS WITH OCCUPANCIES > 1===================================================
+#         # #2-1,2-2,etc:
+#         # calculates where at least one of them has higher occupancy than one
+#         occupancy_grater_than_one = logical_or(alice_frame_occupancies>1,bob_frame_occupancies>1)
+# 
+#         # takes frames which were non zero either in alice or bob data
+#         alice_potential_non_zero_locations = alice_frame_locations[occupancy_grater_than_one]
+#         bob_potential_non_zero_locations = bob_frame_locations[occupancy_grater_than_one]
+# 
+#         alice_occupancy_greater_than_one = alice_frame_occupancies[occupancy_grater_than_one]
+#         bob_occupancy_greater_than_one = bob_frame_occupancies[occupancy_grater_than_one]
+# 
+#         actual_binary_string_bool_bob = resequence(bob_potential_non_zero_locations,bob_occupancy_greater_than_one,frame_size)
+#         actual_binary_string_bool_alice = resequence(alice_potential_non_zero_locations,alice_occupancy_greater_than_one,frame_size)
+# 
+# #===============================================================================================
+# 
+# #===================DEALS WITH OCCUPANCIES == 1==================================================
+# 
+#         mutual_frames_with_occupancy_one = logical_and(alice_frame_occupancies==1,bob_frame_occupancies==1)
+#     
+#         alice_non_zero_positions_in_frame = alice_frame_locations[mutual_frames_with_occupancy_one]
+#         bob_non_zero_positions_in_frame   = bob_frame_locations[mutual_frames_with_occupancy_one]
+#     
+#         # ------------------Polarizations of nonzero elements ------------------------------------------------------------
+#         # alice_pf = alice_p[mutual_frames_with_occupancy_one]
+#         # bob_pf = bob_p[mutual_frames_with_occupancy_one]
+#         # graphs.polarizationPlot(alice_pf,bob_pf)
+#         # ----------------------------------------------------------------------------------------------------------------
+# 
+#         print "Alice and Bob frame location DATA saved for LDPC procedure."
+#         # fmt="%number_of_parity_check_eqns" saves signed decimal integers
+# #         savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%number_of_parity_check_eqns")
+# 
+# #==================CODE STATISTICS=================================================================================================
+# 
+#         print "->Code statistics: "
+#         sys.stdout.flush()
+#     
+#         print "Frame Occupancy: "
+#         print "\tLength:",len(alice_frame_occupancies)
+#         occ_number_of_coincidences = sum(bob_frame_occupancies==alice_frame_occupancies)
+#         occ_coincidence_fraction = float(occ_number_of_coincidences)/len(bob_frame_occupancies)
+#         print "\tNumber of coincidences:",occ_number_of_coincidences," with fraction of: ",occ_coincidence_fraction
+#         print "\tError:",1-occ_coincidence_fraction
+#     
+#         print "Frame Location: "
+#         print "\tLength:",len(bob_non_zero_positions_in_frame)
+#         loc_number_of_coincidences = sum(alice_non_zero_positions_in_frame==bob_non_zero_positions_in_frame)
+# #         loc_coincidence_fraction = float(loc_number_of_coincidences)/len(bob_non_zero_positions_in_frame)
+# #         print "\tNumber of coincidences:",loc_number_of_coincidences,loc_coincidence_fraction
+# #         print "\tError:",1-loc_coincidence_fraction
+# 
+# 
+#         if (any(alice_frame_occupancies > frame_size) or any(bob_frame_occupancies > frame_size)):
+#             print "WARNING: Over the TOP!"
+# 
+#         sys.stdout.flush()
+# 
+# #==================2-x theory====================================================================================================
+# 
+#         mutual_binary_string_bool = float(sum(logical_and(actual_binary_string_bool_alice,actual_binary_string_bool_bob)))
+#         actual_binary_string_bob_prob_one = float(sum(actual_binary_string_bool_bob))/float(len(actual_binary_string_bool_bob))
+# 
+#         multi_p1g1b = mutual_binary_string_bool/float(sum(actual_binary_string_bool_bob))
+#         multi_p1a = float(sum(actual_binary_string_bool_alice))/float(len(actual_binary_string_bool_alice))
+# 
+#         if(sum(actual_binary_string_bool_alice)!=0):
+#             multi_p1g1a = mutual_binary_string_bool/float(sum(actual_binary_string_bool_alice))
+#         else:
+#             multi_p1g1a = mutual_binary_string_bool/float(1)
+# 
+#         maxtag_a = alice[-1]
+#         multi_bperf = maxtag_a/float(len(actual_binary_string_bool_bob))
+#         print "MULTI"
+#         print "Length:",len(actual_binary_string_bool_bob)
+#         print "Ones in Alice:",sum(actual_binary_string_bool_alice),"Bob:",sum(actual_binary_string_bool_bob)
+#         # print "Coincidences",mutual_binary_string_bool
+#         print "p1",actual_binary_string_bob_prob_one,multi_p1a
+#         print "p1g1",multi_p1g1b,multi_p1g1a
+#         print "Number of original bits per multi:",multi_bperf
+#         entropy_left = theoretical(multi_p1a,multi_p1g1a,actual_binary_string_bob_prob_one,multi_p1g1b)
+#         multientropy = entropy_left/multi_bperf
+# #===============================================================================================================================
+#  
+#         coincidence_rate_non_binary = sum(alice_non_zero_positions_in_frame == bob_non_zero_positions_in_frame)/len(alice_non_zero_positions_in_frame)
+# #         mutual_frame_locations_bool = (alice_frame_locations ==bob_frame_locations)
+# #         print "Got bool array"
+# #         mutual_frame_locations = alice_frame_locations[mutual_frame_locations_bool]
+# #         print "Converting bool array"
+# #         entropy_mutual = calculate_frame_entropy(mutual_frame_locations,frame_size)
+# #=======================ENTROPY2 PARAMETERS=======================================================
+#         same_timetags_for_both = intersect1d(alice,bob)    
+# 
+#         p1a = float(len(alice))/alice[-1]
+#         p1b = float(len(bob))/bob[-1] 
+# 
+#         p1g1a = float(len(same_timetags_for_both))/len(alice)
+#         p1g1b = float(len(same_timetags_for_both))/len(bob)
+# 
+#         alice_occ_letter_probabilities = letter_probabilities(alice_frame_occupancies,frame_size, 1)
+#         bob_occ_letter_probabilities = letter_probabilities(bob_frame_occupancies, frame_size, 1)
+#         
     return binary_entropies
         
 #         swtransmat = transitionMatrix_data2(alice_frame_occupancies,bob_frame_occupancies,frame_size)

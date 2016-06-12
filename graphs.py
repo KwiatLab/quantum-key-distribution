@@ -29,21 +29,21 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
     if (delays2==None):
         delays2=zeros(len(channels2))
         
-    length = bins/2*bufAlice.resolution
+    window_radius = bins/2*bufAlice.resolution
     dist=(array(range(bins))-bins/2)*bufAlice.resolution
     f,ax=subplots(len(channels1),sharex=True)
     plots = []
     for i in range(len(channels1)):
-        ax[i].set_ylabel("Channel "+str(i+1))
+        ax[i].set_ylabel("Channel "+str(channels1[i]))
         if (pulsebin > 0.0):
             ax[i].axvline(pulsebin/2)
             ax[i].axvline(-pulsebin/2)
             ax[i].axvline(3*pulsebin/2)
             ax[i].axvline(-3*pulsebin/2)
         for j in range(len(channels2)):
-            cor=bufAlice.correlate(time,length,bins,channels1[i],channels2[j],channel1delay=delays1[i],channel2delay=delays2[j])
-            
-            #Now, we have a way to fit to gaussian - set initial parameters
+            cor=bufAlice.correlate(time,window_radius,bins,channels1[i],channels2[j])
+            print "This is correlations between "+str(channels1[i])+" and "+str(channels2[j])+" : \n",cor, max(cor)
+#             #Now, we have a way to fit to gaussian - set initial parameters
             popt=[max(cor),argmax(cor),3]
             try:
                 mu = argmax(cor)
@@ -52,7 +52,7 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
                 popt,pcov = curve_fit(gauss,range(bins),cor,p0=(A,mu,sigma))
             except:
                 popt=[max(cor),argmax(cor),3]
-            #
+#             #
             if (i==0):
                 plots.append(ax[i].plot(dist,cor,linewidth=2,label=r"Channel "+str(j+1) + r" ($\sigma$="+str(round(popt[2]*bufAlice.resolution*1e12,2))+"ps)"))
             else:
@@ -61,7 +61,7 @@ def plotABCorrelations(bufAlice,channels1,channels2,delays1=None,delays2=None,bi
     ax[0].set_title("Correlations Between Alice and Bob's Channels")
     ax[-1].set_xlabel("Time in Seconds")
     f.subplots_adjust(hspace=0)
-    #ax[0].legend()
+    ax[0].legend()
     show()
 
 def polarizationPlot(polA,polB):

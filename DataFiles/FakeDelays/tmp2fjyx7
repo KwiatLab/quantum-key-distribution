@@ -23,25 +23,22 @@ def make_equal_size(alice_thread,bob_thread):
     else:
         bob_thread.ttags    = bob_thread.ttags[:len(alice_thread.ttags)]
         bob_thread.channels = bob_thread.channels[:len(alice_thread.channels)]
-def loadprep(name):
+def loadprep(fname,name):
 
     sys.stdout.flush()
-    alice = load("./DarpaQKD/"+name+"Ttags.npy")
-    alice_pol=load("./resultsLaurynas/"+name+"Channels.npy")
+    alice = load("./resultsLaurynas/"+name+"Ttags_"+fname+".npy")
+    alice_pol=load("./resultsLaurynas/"+name+"Channels_"+fname+".npy")
     return (alice,alice_pol)
 def load_save_raw_file(dir, alice_channels, bob_channels):
-    data = loadtxt(dir)
+    data = load(dir)
 
     channels = load[:,0]
     timetags = load[:,1]
     print("Saving Data Arrays")
     sys.stdout.flush()
     
-    save("./DarpaQKD/aliceChannels.npy",channels[in1d(channels, alice_channels)])
-    save("./DarpaQKD/aliceTtags.npy",timetags[in1d(channels, alice_channels)])
-    
-    save("./DarpaQKD/bobChannels.npy",channels[in1d(channels, bob_channels)])
-    save("./DarpaQKD/bobTtags.npy",timetags[in1d(channels, bob_channels)])
+    save("./DarpaQKD/aliceChannels.npy",in1d[channels, alice_channels])
+    save("./resultsLaurynas/"+name+"Channels_"+fname+".npy",alice_pol)
     
     
 def LDPC_encode(party,column_weight = 3,number_parity_edges = 6):
@@ -62,12 +59,12 @@ def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
     belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius):
+    def __init__(self, resolution, raw_filename,name,channelArray, coincidence_window_radius):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
         self.resolution = resolution
-        self.raw_file_name = None
+        self.raw_file_name = raw_filename
         self.delays = None
         self.channelArray = channelArray
         self.coincidence_window_radius = coincidence_window_radius
@@ -93,8 +90,8 @@ class PartyThread(threading.Thread):
         self.event.set()
     def run(self):
         while self.running:
-#             print self.name.upper()+" : Reading.csv files and converting to .npy\n"
-#             system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
+            print self.name.upper()+" : Reading.csv files and converting to .npy\n"
+            system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
             print self.name.upper()+": Loading .npy data"
 #             print self.ttags
             (self.ttags,self.channels) = loadprep("06032014_maxpower",self.name)
@@ -164,11 +161,8 @@ if __name__ == '__main__':
     
 #     alice_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
 #     bob_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
-    raw_file_dir = "./DarpaQKD/Alice1_Bob1.csv"
-    alice_channels = [0,1,2,3]
-    bob_channels =   [4,5,6,7]
+    raw_file_name = "./DarpaQKD/Alice1_Bob1.csv"
     
-    load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
     
     
     set_printoptions(edgeitems = 100)
@@ -181,8 +175,8 @@ if __name__ == '__main__':
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=aliceChannelArray, coincidence_window_radius = coincidence_window_radius)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bobChannelArray, coincidence_window_radius = coincidence_window_radius)
+    alice_thread = PartyThread(resolution, alice_raw_filename, "alice",channelArray=aliceChannelArray, coincidence_window_radius = coincidence_window_radius)
+    bob_thread = PartyThread(resolution, bob_raw_filename,"bob", channelArray=bobChannelArray, coincidence_window_radius = coincidence_window_radius)
     start = timeit.default_timer()  
    
     main_event = threading.Event()

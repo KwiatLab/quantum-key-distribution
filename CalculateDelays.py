@@ -29,7 +29,7 @@ def gauss(x, *p):
 def getDelay(bufAlice,channel1,channel2,initialdelay1=0.0,initialdelay2=0.0,delaymax = 0.0000001,time=1.0):
 #   How many bins are in one coincidence window
     bins = int(delaymax/bufAlice.resolution)*2
-    print "bins:",bins
+    print "Corr window size in bins:",bins
     corr = bufAlice.correlate(time,delaymax,bins,channel1,channel2,channel1delay=initialdelay1,channel2delay=initialdelay2)
     
     #Now, we have a way to fit to gaussian - set initial parameters

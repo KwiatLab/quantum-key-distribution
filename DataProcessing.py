@@ -20,12 +20,13 @@ def read_raw_file(alice_raw_filename, name, resolution=None):
     alice__channels = alice_file_contents[0, :].astype(uint8);
 
     if (resolution):
+#         print (alice_file_contents[1, :] - alice_file_contents[1, 0])/resolution
         alice_timetags = around((alice_file_contents[1, :] -
                                  alice_file_contents[1, 0]) / resolution).astype(uint64)
     else:
         alice_timetags = (alice_file_contents[1, :] -
                                 alice_file_contents[1, 0]).astype(uint64)
-    
+#     print alice_timetags
     return (alice__channels,alice_timetags)
 def read_processed_file(alice_processed_filename):
 
@@ -50,7 +51,7 @@ if (__name__ == '__main__'):
     
     alice_raw_filename = sys.argv[1]
     name = sys.argv[2]
-    resolution = 1.5625e-10
+    resolution = 156.25e-12
     
     alice_bob_ch_ttag =read_raw_file(alice_raw_filename,name ,resolution)
     saveprep("06032014_maxpower",alice_bob_ch_ttag[1],alice_bob_ch_ttag[0])

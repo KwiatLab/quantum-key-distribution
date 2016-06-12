@@ -33,7 +33,7 @@ if (__name__ == '__main__'):
     
     
 #     resolution = 1.5625e-10
-    resolution = 260.41e-12
+    resolution = 156.25e-12
 #     print loadedData[0][:100]
     numpy.set_printoptions(edgeitems = 50)
 #==================================TRIAL FOR DELAYS==================================================
@@ -135,7 +135,6 @@ if (__name__ == '__main__'):
     channels2=channels1 = [2,3,4,5]
 #    1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
-    coincidence_window_radius = 1.9e-7
     
 
 #     # make them of equal size
@@ -149,6 +148,13 @@ if (__name__ == '__main__'):
     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
     aliceChannels = take(aliceChannels,indexes_of_order)
     aliceTtags = take(aliceTtags,indexes_of_order)
+    
+    indexes_of_order = bobTtags.argsort(kind = "mergesort")
+#     
+    bobChannels = take(bobChannels,indexes_of_order)
+    bobTtags = take(bobTtags,indexes_of_order)
+    calculate_delays(aliceTtags, aliceChannels, bobTtags, bobChannels, channel_array=channels1) 
+    
 #     #------------------------------------
 #     # print("Alice ready. Adding Alice Data to Buffer")
 #     bufAlice.addarray(aliceChannels,aliceTtags)
@@ -170,11 +176,6 @@ if (__name__ == '__main__'):
 #     
 #     #sorting Bob just in case ttags----------
 #     # print ("Sorting Bob Tags")
-    indexes_of_order = bobTtags.argsort(kind = "mergesort")
-#     
-    bobChannels = take(bobChannels,indexes_of_order)
-    bobTtags = take(bobTtags,indexes_of_order)
-    calculate_delays(aliceTtags, aliceChannels, bobTtags, bobChannels, resolution, coincidence_window_radius, channels1) 
    
 #     #------------------------------------
 #     #adding Bob data to buffer
@@ -188,34 +189,34 @@ if (__name__ == '__main__'):
 #     # print "--------------------WILL BE CALCULATING STATISTICS-------------------------------------------------"
 #     # printing statistics -------------------------------------------------------------------------------
 # #     print aliceTtags[:100]
-# #     calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
+    calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
 #     # print "-------------------END OF STATISTICS---------------------------------------------------------------"
 #     #adding buffer with ABdata---------------------------------------------------------------------------
 #     # print("Combining ALICE and BOB and adding to new buffer")
 #     # print aliceTtags.dtype
-    A_B_timetags = concatenate([aliceTtags,bobTtags])
-    A_B_channels = concatenate([aliceChannels,bobChannels])
+#     A_B_timetags = concatenate([aliceTtags,bobTtags])
+#     A_B_channels = concatenate([aliceChannels,bobChannels])
 #     # print A_B_timetags
 #     # print A_B_channels
 #     
 
+# 
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)
 
-    indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
-    A_B_channels = take(A_B_channels,indexes_of_order)
-    A_B_timetags = take(A_B_timetags,indexes_of_order)
-
     
-    buf_num = ttag.getfreebuffer()
-    buf = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
-    buf.resolution = resolution
-    buf.channels = max(A_B_channels)+1
-    buf.addarray(A_B_channels,A_B_timetags)
+#     buf_num = ttag.getfreebuffer()
+#     buf = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+#     buf.resolution = resolution
+#     buf.channels = max(A_B_channels)+1
+#     buf.addarray(A_B_channels,A_B_timetags)
+#     
     
-    
-    channels2=channels1 = [2,3,4,5]
+#     channels2=channels1 = [2,3,4,5]
 #    1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
-    coincidence_window_radius = 1.9e-7
+#     coincidence_window_radius = 1.9e-7
     
 #     THIS IS ONLY TO SAVE DELAYS TO FILE FOR "System.py"
      
