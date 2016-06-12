@@ -32,8 +32,8 @@ def loadprep(name):
 def load_save_raw_file(dir, alice_channels, bob_channels):
     data = loadtxt(dir)
 
-    channels = load[:,0]
-    timetags = load[:,1]
+    channels = data[:,0]
+    timetags = data[:,1]
     print("Saving Data Arrays")
     sys.stdout.flush()
     
