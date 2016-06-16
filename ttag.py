@@ -652,6 +652,7 @@ class TTBuffer(object):
         corr = numpy.zeros(bins,dtype=numpy.uint64)
         libttag.tt_correlate(self.tt_buf,time,windowradius,bins,channel1,channel1delay,
                             channel2,channel2delay,corr.ctypes.data_as(ctypes.POINTER(ctypes.c_ulonglong)))
+       
         return corr
 
 

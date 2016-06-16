@@ -17,25 +17,26 @@ import Statistics
 from Statistics import calculateStatistics
 from DataProcessing import *
 from Delays import calculate_delays
-def loadprep(fname):
-    # print("Loading Alice and Bob arrays")
-
-    sys.stdout.flush()
-    alice = load("./resultsLaurynas/resultsLaurynas/aliceTtags_"+fname+".npy")
-    bob = load("./resultsLaurynas/resultsLaurynas/bobTtags_"+fname+".npy")
-    alice_pol=load("./resultsLaurynas/resultsLaurynas/aliceChannels_"+fname+".npy")
-    bob_pol = load("./resultsLaurynas/resultsLaurynas/bobChannels_"+fname+".npy")
-
-    return (alice,bob,alice_pol,bob_pol)
+from System import loadprep
+# def loadprep(fname):
+#     # print("Loading Alice and Bob arrays")
+# 
+#     sys.stdout.flush()
+#     alice = load("./resultsLaurynas/resultsLaurynas/aliceTtags_"+fname+".npy")
+#     bob = load("./resultsLaurynas/resultsLaurynas/bobTtags_"+fname+".npy")
+#     alice_pol=load("./resultsLaurynas/resultsLaurynas/aliceChannels_"+fname+".npy")
+#     bob_pol = load("./resultsLaurynas/resultsLaurynas/bobChannels_"+fname+".npy")
+# 
+#     return (alice,bob,alice_pol,bob_pol)
 
 if (__name__ == '__main__'):
-    loadedData = loadprep("06032014_maxpower")
+#     loadedData = loadprep("06032014_maxpower")
     
     
 #     resolution = 1.5625e-10
-    resolution = 156.25e-12
+#     resolution = 156.25e-12
 #     print loadedData[0][:100]
-    numpy.set_printoptions(edgeitems = 50)
+    numpy.set_printoptions(edgeitems = 20)
 #==================================TRIAL FOR DELAYS==================================================
 #     alice_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
 #     bob_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
@@ -126,14 +127,13 @@ if (__name__ == '__main__'):
 #     bufAlice.channels = max(loadedData[2])+1
 #     # print("->Resolution:",bufAlice.resolution)
 #     # print("->Channels:",bufAlice.channels)
-    aliceTtags = loadedData[0]
-    aliceChannels =loadedData[2]
-# 
-    bobTtags = loadedData[1]
-    bobChannels =loadedData[3]
+    (aliceTtags,aliceChannels) = loadprep("alice")
+    (bobTtags,bobChannels) = loadprep("bob")
     
-    channels2=channels1 = [2,3,4,5]
-#    1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
+    alice_channels = [0,1,2,3]
+    bob_channels =   [4,5,6,7]
+    
+#      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
     
 
@@ -153,7 +153,7 @@ if (__name__ == '__main__'):
 #     
     bobChannels = take(bobChannels,indexes_of_order)
     bobTtags = take(bobTtags,indexes_of_order)
-    calculate_delays(aliceTtags, aliceChannels, bobTtags, bobChannels, channel_array=channels1) 
+    calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64), bobChannels.astype(uint8)) 
     
 #     #------------------------------------
 #     # print("Alice ready. Adding Alice Data to Buffer")
@@ -189,7 +189,7 @@ if (__name__ == '__main__'):
 #     # print "--------------------WILL BE CALCULATING STATISTICS-------------------------------------------------"
 #     # printing statistics -------------------------------------------------------------------------------
 # #     print aliceTtags[:100]
-    calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
+#     calculateStatistics(aliceTtags,bobTtags,aliceChannels,bobChannels)
 #     # print "-------------------END OF STATISTICS---------------------------------------------------------------"
 #     #adding buffer with ABdata---------------------------------------------------------------------------
 #     # print("Combining ALICE and BOB and adding to new buffer")

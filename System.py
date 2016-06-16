@@ -27,7 +27,7 @@ def loadprep(name):
 
     sys.stdout.flush()
     alice = load("./DarpaQKD/"+name+"Ttags.npy")
-    alice_pol=load("./resultsLaurynas/"+name+"Channels.npy")
+    alice_pol=load("./DarpaQKD/"+name+"Channels.npy")
     return (alice,alice_pol)
 def load_save_raw_file(dir, alice_channels, bob_channels):
     data = loadtxt(dir)
@@ -97,7 +97,8 @@ class PartyThread(threading.Thread):
 #             system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
             print self.name.upper()+": Loading .npy data"
 #             print self.ttags
-            (self.ttags,self.channels) = loadprep("06032014_maxpower",self.name)
+            (self.ttags,self.channels) = loadprep(self.name)
+            print self.name, self.channels,self.ttags
 #           TODO: Add delays here
             print "Loading delays"
             self.delays = load("./resultsLaurynas/Delays/"+self.name+"Delay.npy")
@@ -114,6 +115,8 @@ class PartyThread(threading.Thread):
             self.channels = take(self.channels,indexes_of_order)
             self.ttags = take(self.ttags,indexes_of_order)
 #             print"--->>>>>>>>>>>>>>>",self.ttags
+            self.ttags = self.ttags.astype(uint64)
+            self.channels = self.channels.astype(uint8)
             
             print self.name.upper() +" FINISHED with data. Will notify main.\n"        
             buf_num = ttag.getfreebuffer() 
@@ -168,21 +171,20 @@ if __name__ == '__main__':
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
+    # load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
     
     
     set_printoptions(edgeitems = 100)
     resolution = 156.25e-12
     coincidence_window_radius = 1.9e-9
-    aliceChannelArray = bobChannelArray = [2,3,4,5]
     alice_event = threading.Event()
     alice_event.set()
    
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=aliceChannelArray, coincidence_window_radius = coincidence_window_radius)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bobChannelArray, coincidence_window_radius = coincidence_window_radius)
+    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius)
+    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius)
     start = timeit.default_timer()  
    
     main_event = threading.Event()

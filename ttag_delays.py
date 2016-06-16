@@ -21,9 +21,11 @@ def gauss(x, *p):
 #Also, just assume that max one is the correct delay - a gaussian fit might be better
 #   for certain things
 def getDelay(buf,channel1,channel2,initialdelay1=0.0,initialdelay2=0.0,delaymax = 0.0000001,time=1.0):
+
     bins = int(delaymax/buf.resolution)*2
+    print delaymax,"coincidence window radius "," window length in bins ",bins, time, " time back "
     corr = buf.correlate(time,delaymax,bins,channel1,channel2,channel1delay=initialdelay1,channel2delay=initialdelay2)
-    
+    print len(corr),corr
     #Now, we have a way to fit to gaussian - set initial parameters
     mu = argmax(corr)
     sigma = 5
@@ -84,104 +86,104 @@ def plotAll(buf,channels1,channels2,delays1,delays2):
     f.subplots_adjust(hspace=0)
     ax[0].legend()
 """
-buf = ttag.TTBuffer(0)
-d = getPossibleInitialDelays(buf,0,6)
-
-channels1=[2,3,4,5]
-channels2=[8,9,10,11]
-
-d1,d2 = getDelays(buf,channels1,channels2,d[0])
-
-print("Second Round of Delay finding")
-d1,d2 = getDelays(buf,channels1,channels2,delays1=d1,delays2=d2,delaymax=buf.resolution*100)
-
-print("Preparing Correlation Plot")
-graphs.plotABCorrelations(buf,channels1,channels2,d1,d2)
-user=input("Looks good? (y/n):")
-if (user=="y"):
-    print("Creating Syncd Data...")
-    channels,timetags = buf[:]
-
-    print("- Applying Delays")
-    for i in range(len(channels1)):
-        timetags[channels==channels1[i]]-=d1[i]
-    for i in range(len(channels2)):
-        timetags[channels==channels2[i]]-=d2[i]
-
-    print("- Extracting Alice and Bob")
-    allWanted = (channels==channels1[0])
-    for i in range(1,len(channels1)):
-        allWanted= logical_or(allWanted,channels==channels1[i])
-    for c in channels2:
-        allWanted = logical_or(allWanted,channels==c)
-
-    channels = channels[allWanted]
-    timetags = timetags[allWanted]
-
-    c1b = []
-    c2b = []
-    for c in range(len(channels1)):
-        c1b.append(channels==channels1[c])
-    for c in range(len(channels2)):
-        c2b.append(channels==channels2[c])
-
-    for i in range(len(channels1)):
-        channels[c1b[i]]=i
-    for i in range(len(channels2)):
-        channels[c2b[i]]=i+len(channels1)
-
-    """
-    #
-    ##WTF: This code causes a segfault later! I don't even... I don't have time right now to fix it.
-    #
-    print("- Finding intersect of data from both time taggers")
-    #Find the first and last time tags of the two time taggers
-    #   and then take only the intersecting sets
-    c1I = c1b[0]
-    for i in range(1,len(c1b)):
-        c1I= logical_or(c1I,c1b[i])
-    c2I = c2b[0]
-    for i in range(1,len(c2b)):
-        c2I= logical_or(c2I,c2b[i])
-    
-    ttmin = logical_and(timetags > min(timetags[c1I]),timetags > min(timetags[c2I]))
-    ttmax = logical_and(timetags < max(timetags[c1I]),timetags < max(timetags[c2I]))
-    tttot = logical_and(ttmin,ttmax)
-    timetags = timetags[tttot]
-    channels = channels[tttot]
-    """
-
-    print("- Sorting")
-    #Sort again to make sure everything is fine
-    order = timetags.argsort()
-    timetags = take(timetags,order)
-    channels = take(channels,order)
-
-    print(len(channels),len(timetags))
-
-
-    print("- Creating Buffer")
-    buf_num = ttag.getfreebuffer()
-
-    print("- Opening Buffer",buf_num)
-    buf2 = ttag.TTBuffer(buf_num,create=True,datapoints = len(channels))
-
-    print("- Setting Properties")
-    buf2.resolution = buf.resolution
-    buf2.channels = max(channels)+1
-    print("- > Resolution:",buf2.resolution)
-    print("- > Channels:",buf2.channels)
-
-    print("- Converting timetags to BIN format")
-    #First: Make the smallest tag 0 to avoid possible negatives
-    timetags-=timetags[0]
-    #Convert to bins
-    timetags = (around((timetags)/buf2.resolution)).astype(uint64)
-
-    print(timetags,channels)
-    print("- Adding to Buffer")
-    buf2.addarray(channels,timetags)
-
-    print("\nBuffer",buf_num,"Ready.\n\nWhen done, press ENTER to clean up.")
-
-    input()
+# buf = ttag.TTBuffer(0)
+# d = getPossibleInitialDelays(buf,0,6)
+# 
+# channels1=[2,3,4,5]
+# channels2=[8,9,10,11]
+# 
+# d1,d2 = getDelays(buf,channels1,channels2,d[0])
+# 
+# print("Second Round of Delay finding")
+# d1,d2 = getDelays(buf,channels1,channels2,delays1=d1,delays2=d2,delaymax=buf.resolution*100)
+# 
+# print("Preparing Correlation Plot")
+# graphs.plotABCorrelations(buf,channels1,channels2,d1,d2)
+# user=input("Looks good? (y/n):")
+# if (user=="y"):
+#     print("Creating Syncd Data...")
+#     channels,timetags = buf[:]
+# 
+#     print("- Applying Delays")
+#     for i in range(len(channels1)):
+#         timetags[channels==channels1[i]]-=d1[i]
+#     for i in range(len(channels2)):
+#         timetags[channels==channels2[i]]-=d2[i]
+# 
+#     print("- Extracting Alice and Bob")
+#     allWanted = (channels==channels1[0])
+#     for i in range(1,len(channels1)):
+#         allWanted= logical_or(allWanted,channels==channels1[i])
+#     for c in channels2:
+#         allWanted = logical_or(allWanted,channels==c)
+# 
+#     channels = channels[allWanted]
+#     timetags = timetags[allWanted]
+# 
+#     c1b = []
+#     c2b = []
+#     for c in range(len(channels1)):
+#         c1b.append(channels==channels1[c])
+#     for c in range(len(channels2)):
+#         c2b.append(channels==channels2[c])
+# 
+#     for i in range(len(channels1)):
+#         channels[c1b[i]]=i
+#     for i in range(len(channels2)):
+#         channels[c2b[i]]=i+len(channels1)
+# 
+#     """
+#     #
+#     ##WTF: This code causes a segfault later! I don't even... I don't have time right now to fix it.
+#     #
+#     print("- Finding intersect of data from both time taggers")
+#     #Find the first and last time tags of the two time taggers
+#     #   and then take only the intersecting sets
+#     c1I = c1b[0]
+#     for i in range(1,len(c1b)):
+#         c1I= logical_or(c1I,c1b[i])
+#     c2I = c2b[0]
+#     for i in range(1,len(c2b)):
+#         c2I= logical_or(c2I,c2b[i])
+#     
+#     ttmin = logical_and(timetags > min(timetags[c1I]),timetags > min(timetags[c2I]))
+#     ttmax = logical_and(timetags < max(timetags[c1I]),timetags < max(timetags[c2I]))
+#     tttot = logical_and(ttmin,ttmax)
+#     timetags = timetags[tttot]
+#     channels = channels[tttot]
+#     """
+# 
+#     print("- Sorting")
+#     #Sort again to make sure everything is fine
+#     order = timetags.argsort()
+#     timetags = take(timetags,order)
+#     channels = take(channels,order)
+# 
+#     print(len(channels),len(timetags))
+# 
+# 
+#     print("- Creating Buffer")
+#     buf_num = ttag.getfreebuffer()
+# 
+#     print("- Opening Buffer",buf_num)
+#     buf2 = ttag.TTBuffer(buf_num,create=True,datapoints = len(channels))
+# 
+#     print("- Setting Properties")
+#     buf2.resolution = buf.resolution
+#     buf2.channels = max(channels)+1
+#     print("- > Resolution:",buf2.resolution)
+#     print("- > Channels:",buf2.channels)
+# 
+#     print("- Converting timetags to BIN format")
+#     #First: Make the smallest tag 0 to avoid possible negatives
+#     timetags-=timetags[0]
+#     #Convert to bins
+#     timetags = (around((timetags)/buf2.resolution)).astype(uint64)
+# 
+#     print(timetags,channels)
+#     print("- Adding to Buffer")
+#     buf2.addarray(channels,timetags)
+# 
+#     print("\nBuffer",buf_num,"Ready.\n\nWhen done, press ENTER to clean up.")
+# 
+#     input()
