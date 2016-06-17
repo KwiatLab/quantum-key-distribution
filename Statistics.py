@@ -51,17 +51,17 @@ from itertools import *
 
 #Assumes that the person's data is ordered
 
-def create_binary_string_from_laser_pulses(timetags, coincidence_window_radius, resolution):
+def create_binary_string_from_laser_pulses(timetags, jitter, resolution):
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
 #     print "timetags",timetags
-    length_in_bins = int(coincidence_window_radius/resolution)*2
-    print "length in bins", length_in_bins
+    window_length_in_bins = int(jitter/resolution)
+    print "length in bins", window_length_in_bins
     number_of_timetags = len(timetags)
     bin_string = zeros(number_of_timetags,dtype=uint64)
 
 
     for i in range(number_of_timetags):
-        bin_number = around(timetags[i] / length_in_bins)
+        bin_number = around(timetags[i] / window_length_in_bins)
         bin_string[i]+=bin_number
 
     '''

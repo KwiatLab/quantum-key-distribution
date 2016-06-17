@@ -36,7 +36,7 @@ if (__name__ == '__main__'):
 #     resolution = 1.5625e-10
 #     resolution = 156.25e-12
 #     print loadedData[0][:100]
-    numpy.set_printoptions(edgeitems = 20)
+#     numpy.set_printoptions(edgeitems = 20)
 #==================================TRIAL FOR DELAYS==================================================
 #     alice_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
 #     bob_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"

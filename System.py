@@ -62,7 +62,7 @@ def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
     belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius):
+    def __init__(self, resolution,name,channelArray, coincidence_window_radius,jitter):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
@@ -86,6 +86,7 @@ class PartyThread(threading.Thread):
         self.parity_matrix = None
         self.syndromes = None
         self.sent_string = None
+        self.jitter = jitter
         self.event.set()
     def do_clear(self):
         self.event.clear()
@@ -98,15 +99,26 @@ class PartyThread(threading.Thread):
             print self.name.upper()+": Loading .npy data"
 #             print self.ttags
             (self.ttags,self.channels) = loadprep(self.name)
-            print self.name, self.channels,self.ttags
+#             print self.name, self.channels,self.ttags
 #           TODO: Add delays here
             print "Loading delays"
-            self.delays = load("./resultsLaurynas/Delays/"+self.name+"Delay.npy")
+            self.delays = load("./resultsLaurynas/Delays/delays.npy")
             print self.delays
+            
             self.ttags=self.ttags.astype(int64)
             print "Applying Delays"
-            for i in range(len(self.channelArray)):
-                self.ttags[self.channels==self.channelArray[i]]-=self.delays[i]
+            
+            
+            for delay,ch in zip(self.delays,self.channels):
+                if delay < 0 and self.name == "bob":
+                    print "abs-->>",(abs(delay)).astype(int)
+                    self.ttags += (abs(delay)).astype(uint64)
+                elif delay >= 0 and self.name == "alice":
+                    print "-->",delay
+                    self.ttags += delay.astype(uint64)
+             
+
+
             negatives = where(self.ttags < 0)
             self.ttags = delete(self.ttags,negatives)
             self.channels = delete(self.channels,negatives)
@@ -140,8 +152,9 @@ class PartyThread(threading.Thread):
                 pass
             self.race_flag = True
 # ===================================================================           
-#             self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.coincidence_window_radius,self.resolution)
-            self.binary_string_laser = self.ttags
+            self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.jitter,self.resolution)
+            print "Laser string, ",self.binary_string_laser
+#             self.binary_string_laser = self.ttags
 #             print "New Binary laser string", self.binary_string_laser
             print self.name+" Calculating frame occupancies and locations:\n"
             self.frame_occupancies = calculate_frame_occupancy(self.binary_string_laser,self.frame_size)
@@ -177,14 +190,16 @@ if __name__ == '__main__':
     set_printoptions(edgeitems = 100)
     resolution = 156.25e-12
     coincidence_window_radius = 1.9e-9
+    laser_jitter = 1e-9
+    
     alice_event = threading.Event()
     alice_event.set()
    
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius)
+    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,jitter = laser_jitter)
+    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,jitter = laser_jitter)
     start = timeit.default_timer()  
    
     main_event = threading.Event()
@@ -201,7 +216,7 @@ if __name__ == '__main__':
     
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
-#     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan)
+    statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
 #     print statistics
     
 #     max_shared_binary_entropy = max(statistics.values())
