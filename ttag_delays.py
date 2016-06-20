@@ -23,20 +23,20 @@ def gauss(x, *p):
 def getDelay(buf,channel1,channel2,initialdelay1=0.0,initialdelay2=0.0,delaymax = 0.0000001,time=1.0):
 
     bins = int(delaymax/buf.resolution)*2
-    print delaymax,"coincidence window radius "," window length in bins ",bins, time, " time back "
+#     print delaymax,"coincidence window radius "," window length in bins ",bins, time, " time back "
     corr = buf.correlate(time,delaymax,bins,channel1,channel2,channel1delay=initialdelay1,channel2delay=initialdelay2)
-    print len(corr),corr
+#     print len(corr),corr
     #Now, we have a way to fit to gaussian - set initial parameters
     mu = argmax(corr)
     sigma = 5
     A = max(corr)
-    
-    try:
-        popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
-        print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
-        return (popt[1]-len(corr)/2)*buf.resolution
-    except:
-        return (mu-len(corr)/2)*buf.resolution
+#     
+#     try:
+#         popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
+#         print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
+#         return (popt[1]-len(corr)/2)*buf.resolution
+#     except:
+    return (mu-len(corr)/2)*buf.resolution
 
 
 #This function cannot be used on huge buffers, since it creates a copy of the entire dataset
