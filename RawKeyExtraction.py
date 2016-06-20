@@ -127,11 +127,13 @@ if (__name__ == '__main__'):
 #     bufAlice.channels = max(loadedData[2])+1
 #     # print("->Resolution:",bufAlice.resolution)
 #     # print("->Channels:",bufAlice.channels)
-    (aliceTtags,aliceChannels) = loadprep("alice")
-    (bobTtags,bobChannels) = loadprep("bob")
     
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
+    
+    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels)
+    (bobTtags,bobChannels) = loadprep("bob",bob_channels)
+
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window

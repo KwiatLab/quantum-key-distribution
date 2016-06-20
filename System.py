@@ -23,12 +23,23 @@ def make_equal_size(alice_thread,bob_thread):
     else:
         bob_thread.ttags    = bob_thread.ttags[:len(alice_thread.ttags)]
         bob_thread.channels = bob_thread.channels[:len(alice_thread.channels)]
-def loadprep(name):
+def loadprep(name,channelArray):
 
     sys.stdout.flush()
-    alice = load("./DarpaQKD/"+name+"Ttags.npy")
-    alice_pol=load("./DarpaQKD/"+name+"Channels.npy")
-    return (alice,alice_pol)
+    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+    ttags = array([])
+    channels = array([])
+    for ch in channelArray:
+        ttags = append(ttags, all_ttags[all_channels == ch])
+        channels = append(channels, all_channels[all_channels == ch])
+                
+    indexes_of_order = ttags.argsort(kind = "mergesort")
+    channels = take(channels,indexes_of_order)
+    ttags = take(ttags,indexes_of_order)
+    
+    return (ttags,channels)
+
 def load_save_raw_file(dir, alice_channels, bob_channels):
     data = loadtxt(dir)
 
@@ -98,7 +109,7 @@ class PartyThread(threading.Thread):
 #             system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
             print self.name.upper()+": Loading .npy data"
 #             print self.ttags
-            (self.ttags,self.channels) = loadprep(self.name)
+            (self.ttags,self.channels) = loadprep(self.name, self.channelArray)
 #             print self.name, self.channels,self.ttags
 #           TODO: Add delays here
             print "Loading delays"
@@ -108,7 +119,7 @@ class PartyThread(threading.Thread):
             self.ttags=self.ttags.astype(int64)
             print "Applying Delays"
             
-            
+            print "BEFORE DELAYS", self.ttags,self.channels
             for delay,ch in zip(self.delays,self.channels):
                 if delay < 0 and self.name == "bob":
                     print "abs-->>",(abs(delay)).astype(int)
@@ -151,9 +162,10 @@ class PartyThread(threading.Thread):
             while main_event.is_set():
                 pass
             self.race_flag = True
-# ===================================================================           
+# ===================================================================   
+            print "BEFORE ", self.ttags        
             self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.jitter,self.resolution)
-            print "Laser string, ",self.binary_string_laser
+            print "Laser string, ",self.binary_string_laser,self.channels
 #             self.binary_string_laser = self.ttags
 #             print "New Binary laser string", self.binary_string_laser
             print self.name+" Calculating frame occupancies and locations:\n"
@@ -187,10 +199,10 @@ if __name__ == '__main__':
     # load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
     
     
-    set_printoptions(edgeitems = 100)
-    resolution = 156.25e-12
+    set_printoptions(edgeitems = 20)
+    resolution = 78.125e-12
     coincidence_window_radius = 1.9e-9
-    laser_jitter = 1e-9
+    laser_jitter = 1e-6
     
     alice_event = threading.Event()
     alice_event.set()
@@ -216,12 +228,14 @@ if __name__ == '__main__':
     
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
-    statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
+    
+    
+#     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
 #     print statistics
     
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
-    optimal_frame_size = 512
+    optimal_frame_size = 2048
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
     

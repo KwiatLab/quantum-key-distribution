@@ -30,9 +30,13 @@ def getDelay(buf,channel1,channel2,initialdelay1=0.0,initialdelay2=0.0,delaymax 
     mu = argmax(corr)
     sigma = 5
     A = max(corr)
-    popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
-    print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
-    return (popt[1]-len(corr)/2)*buf.resolution
+    
+    try:
+        popt,pcov = curve_fit(gauss,range(bins),corr,p0=(A,mu,sigma))
+        print(channel1,channel2,"FIT: (A,mu,sigma)=",popt)
+        return (popt[1]-len(corr)/2)*buf.resolution
+    except:
+        return (mu-len(corr)/2)*buf.resolution
 
 
 #This function cannot be used on huge buffers, since it creates a copy of the entire dataset

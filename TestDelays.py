@@ -5,7 +5,7 @@ Created on Jun 11, 2016
 '''
 import ttag
 from numpy import uint8,concatenate,uint64,loadtxt,array,take,set_printoptions,zeros,where
-from ttag_delays import getDelay
+from ttag_delays import getDelay,getDelays
 
 if __name__ == '__main__':
     alice = loadtxt("./DataFiles/FakeDelays/AliceFake2.txt")
@@ -48,16 +48,35 @@ if __name__ == '__main__':
         delay= (getDelay(buffer,i,j,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buffer.resolution)/buffer.resolution).astype(uint64)
         delays[k] = delay
         k+=1
+    
+    print "__BEFORE DELAYS-->\n",(buffer.coincidences((A_B_timetags[-1]-1)*buffer.resolution, coincidence_window_radius))
 
-    for delay,ch1,ch2 in zip(delays,channels1,channels2):
-        if delay < 0:
-            A_B_timetags[A_B_channels == ch2] += (abs(delay)).astype(uint64)
-        else:
-            A_B_timetags[A_B_channels == ch1] += delay.astype(uint64)
+    
+    (d1,d2) = getDelays(buffer,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buffer.resolution)
+    
+    for i in range(len(channels1)):
+        A_B_timetags[A_B_channels==channels1[i]]-=d1[i]
+    for i in range(len(channels2)):
+        A_B_timetags[A_B_channels==channels2[i]]-=d2[i]
+    
+    
+#     for delay,ch1,ch2 in zip(delays,channels1,channels2):
+#         if delay < 0:
+#             A_B_timetags[A_B_channels == ch2] += (abs(delay)).astype(uint64)
+#         else:
+#             A_B_timetags[A_B_channels == ch1] += delay.astype(uint64)
             
     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
     A_B_channels = take(A_B_channels,indexes_of_order)
     A_B_timetags = take(A_B_timetags,indexes_of_order)
-    print A_B_timetags,A_B_channels
+    
+    
+    buf_num = ttag.getfreebuffer()
+    bufDelays = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+    bufDelays.resolution = resolution
+    bufDelays.channels = max(A_B_channels)+1
+    bufDelays.addarray(A_B_channels,A_B_timetags.astype(uint64))
+    
+    print "__WITH_DELAYS-->\n",(bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius))
        
     
