@@ -9,6 +9,22 @@ import graphs
 import ttag
 from ttag_delays import getDelay, getDelays
 
+
+def get_coincidences(A_B_timetags,A_B_channels,ch1,ch2,coincidence_window_in_bins):
+    alice_ttags = A_B_timetags[A_B_channels == ch1]
+    bob_ttags = A_B_timetags[A_B_channels == ch2]
+    print ch1,"--",ch2
+    print "length in bins", coincidence_window_in_bins
+    coincidences = 0
+    alice_max = alice_ttags[-1]
+    bob_max = bob_ttags[-1]
+    
+    for a_ttag, b_ttag in zip(alice_ttags, bob_ttags):
+        if alice_max-a_ttag + coincidence_window_in_bins/2 >= bob_max - b_ttag:
+            coincidences+=1
+
+    return coincidences
+
 def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max):
 #     print "TIMETAGS BEFORE DELAYS:", A_B_timetags,A_B_channels
     print("- Applying Delays")
@@ -46,6 +62,7 @@ def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels
     bufDelays.resolution = resolution
     bufDelays.channels = max(A_B_channels)+1
     bufDelays.addarray(A_B_channels,A_B_timetags.astype(uint64))
+    print "Coincidences between 0 and 4 by Laurynas: ", get_coincidences(A_B_timetags, A_B_channels, 1, 5, coincidence_window_radius*2/bufDelays.resolution)
     
     print "__WITH_DELAYS-->\n",(bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius))
     print "__DIFF___->>>>\n",matrix_before.astype(int64)-(bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius).astype(int64))
@@ -57,7 +74,7 @@ def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels
     
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
                     resolution= 78.125e-12,
-                    coincidence_window_radius = 1e-9,
+                    coincidence_window_radius = 950e-12,
                     delay_max = 1e-5):
     
     channels1 = [0,1,2,3]
@@ -91,15 +108,15 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
     
     delays1=zeros((len(channels1),len(channels2)))
     delays2=zeros((len(channels1),len(channels2)))
-    
-    for j in range(len(delays1)):
-        for i in range(len(delays2)):
-            delays2[j][i] = getDelay(bufN,channels1[j],channels2[i], delaymax=delay_max,time=(A_B_timetags[-1]-1)*bufN.resolution)
-            
-    #Next, set all of delays for channels1
-    for j in range(len(delays2)):
-        for i in range(len(delays1)):
-            delays1[j][i] = getDelay(bufN,channels1[i],channels2[j], delaymax=delay_max,time=(A_B_timetags[-1]-1)*bufN.resolution)
+#     
+#     for j in range(len(delays1)):
+#         for i in range(len(delays2)):
+#             delays2[j][i] = getDelay(bufN,channels1[j],channels2[i], delaymax=delay_max,time=(A_B_timetags[-1]-1)*bufN.resolution)
+#             
+#     #Next, set all of delays for channels1
+#     for j in range(len(delays2)):
+#         for i in range(len(delays1)):
+#             delays1[j][i] = getDelay(bufN,channels1[i],channels2[j], delaymax=delay_max,time=(A_B_timetags[-1]-1)*bufN.resolution)
     delays1 = delays1/bufN.resolution
     delays2 = delays2/bufN.resolution
     print "DIRECT_____>",(delays/bufN.resolution)
