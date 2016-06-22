@@ -51,19 +51,19 @@ from itertools import *
 
 #Assumes that the person's data is ordered
 
-def create_binary_string_from_laser_pulses(timetags, jitter, resolution):
+def create_binary_string_from_laser_pulses(timetags, resolution, coincidence_window_radius):
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
 #     print "timetags",timetags
-    window_length_in_bins = int(jitter/resolution)
+    window_length_in_bins = int(coincidence_window_radius/resolution)*2
     print "length in bins", window_length_in_bins
     number_of_timetags = len(timetags)
-    bin_string = zeros(number_of_timetags,dtype=uint64)
-
+#     print "last 20",timetags[:-20]
+    sparse_bin_string = zeros(number_of_timetags, dtype = uint64)
 
     for i in range(number_of_timetags):
-        bin_number = around(timetags[i] / window_length_in_bins)
-        bin_string[i]+=bin_number
-
+        
+        bin_number = int(timetags[i] / window_length_in_bins)
+        sparse_bin_string[i] = bin_number
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
     '''
@@ -78,7 +78,7 @@ def create_binary_string_from_laser_pulses(timetags, jitter, resolution):
 #     """
 #     inline(code,["BINSIZE","bin_string","timetags","number_of_timetags"],headers=["<math.h>"])
 
-    return bin_string
+    return sparse_bin_string
 
 def log2_modified(x):
     # if letter probability is 0 returns 0
@@ -394,7 +394,7 @@ def resequence(locations,occupancies,frame_size):
 def calculateStatistics(alice,bob,alice_pol,bob_pol,coincidence_window_radius,resolution):
     print "I entered"
     #saveprep("main_high",*prep())
-    numpy.set_printoptions(edgeitems = 100) 
+#     numpy.set_printoptions(edgeitems = 100) 
     
 
     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice,coincidence_window_radius,resolution)

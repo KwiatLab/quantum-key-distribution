@@ -73,7 +73,7 @@ def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
     belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius,jitter):
+    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
@@ -97,7 +97,7 @@ class PartyThread(threading.Thread):
         self.parity_matrix = None
         self.syndromes = None
         self.sent_string = None
-        self.jitter = jitter
+        self.delay_max = delay_max
         self.event.set()
     def do_clear(self):
         self.event.clear()
@@ -164,8 +164,9 @@ class PartyThread(threading.Thread):
             self.race_flag = True
 # ===================================================================   
             print "BEFORE ", self.ttags        
-            self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.jitter,self.resolution)
+            self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.resolution,self.coincidence_window_radius)
             print "Laser string, ",self.binary_string_laser,self.channels
+            save("./DarpaQKD/"+self.name+"LaserString.npy",self.binary_string_laser)
 #             self.binary_string_laser = self.ttags
 #             print "New Binary laser string", self.binary_string_laser
             print self.name+" Calculating frame occupancies and locations:\n"
@@ -201,8 +202,8 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 1.9e-9
-    laser_jitter = 1e-6
+    coincidence_window_radius = 950e-12
+    delay_max = 1e-5
     
     alice_event = threading.Event()
     alice_event.set()
@@ -210,8 +211,8 @@ if __name__ == '__main__':
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,jitter = laser_jitter)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,jitter = laser_jitter)
+    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max)
+    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max)
     start = timeit.default_timer()  
    
     main_event = threading.Event()
@@ -222,10 +223,12 @@ if __name__ == '__main__':
     print "MAIN: will wait till AB finished loading data."
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
-    
+    print "BEFORE EQUAL"
+    print alice_thread.ttags
+    print bob_thread.ttags
     print "MAIN: Making datasets equal."
     make_equal_size(alice_thread, bob_thread)
-    
+
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
     
@@ -240,6 +243,12 @@ if __name__ == '__main__':
     bob_thread.frame_size = optimal_frame_size
     
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
+    alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
+    bob_binary_laser_string = load("./DarpaQKD/bobLaserString.npy")    
+    print "-->>",alice_binary_laser_string
+    print "-->>",bob_binary_laser_string
+    print "coincide all", float(len(intersect1d(alice_binary_laser_string, bob_binary_laser_string)))/len(alice_binary_laser_string)
+    
     main_event.clear()
     alice_thread.do_set()
     bob_thread.do_set()
@@ -269,7 +278,8 @@ if __name__ == '__main__':
     sys.stdout.flush()
 #      
 # #===================DEALS WITH OCCUPANCIES == 1==================================================
-#  
+
+    print sum(intersect1d(alice_thread.binary_laser_string, bob_thread.binary_laser_string))
     mutual_frames_with_occupancy_one = logical_and(alice_thread.frame_occupancies==1,bob_thread.frame_occupancies==1)
 #  
     alice_non_zero_positions_in_frame = alice_thread.frame_locations[mutual_frames_with_occupancy_one]
