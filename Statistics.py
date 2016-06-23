@@ -51,19 +51,30 @@ from itertools import *
 
 #Assumes that the person's data is ordered
 
+def get_timetags_window(timetag,window_radius):
+    a = zeros(window_radius*2+1,dtype = uint64)
+    j = 0
+    for i in range(-window_radius,window_radius+1):
+        a[j] = timetag+i
+        j+=1
+    return a
+
 def create_binary_string_from_laser_pulses(timetags, resolution, coincidence_window_radius):
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
 #     print "timetags",timetags
     window_length_in_bins = int(coincidence_window_radius/resolution)*2
+    window_radius = window_length_in_bins/2
+    
     print "length in bins", window_length_in_bins
     number_of_timetags = len(timetags)
 #     print "last 20",timetags[:-20]
-    sparse_bin_string = zeros(number_of_timetags, dtype = uint64)
+    sparse_bin_string = array([])
 
     for i in range(number_of_timetags):
+        append(sparse_bin_string,get_timetags_window(timetags[i], window_radius))
         
-        bin_number = int(timetags[i] / window_length_in_bins)
-        sparse_bin_string[i] = bin_number
+        
+    return sparse_bin_string
     '''
     NOTE: If performance is really bad try fixing code below for implementation in low-level language
     '''
@@ -78,7 +89,7 @@ def create_binary_string_from_laser_pulses(timetags, resolution, coincidence_win
 #     """
 #     inline(code,["BINSIZE","bin_string","timetags","number_of_timetags"],headers=["<math.h>"])
 
-    return sparse_bin_string
+
 
 def log2_modified(x):
     # if letter probability is 0 returns 0

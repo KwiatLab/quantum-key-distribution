@@ -133,28 +133,28 @@ if (__name__ == '__main__'):
     
     (aliceTtags,aliceChannels) = loadprep("alice",alice_channels)
     (bobTtags,bobChannels) = loadprep("bob",bob_channels)
-
+    print aliceTtags[-1], bobTtags[-1]
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
 #    UPDATE: actaully you can take smaller fraction of the strings to determine delays but then you need to increase coincidence window
     
 
 #     # make them of equal size
-    if (len(aliceTtags) > len(bobTtags)):
-        aliceTtags    = aliceTtags[:len(bobTtags)]
-        aliceChannels = aliceChannels[:len(bobChannels)]
-    else:
-        bobTtags    = bobTtags[:len(aliceTtags)]
-        bobChannels = bobChannels[:len(aliceChannels)]
+#     if (len(aliceTtags) > len(bobTtags)):
+#         aliceTtags    = aliceTtags[:len(bobTtags)]
+#         aliceChannels = aliceChannels[:len(bobChannels)]
+#     else:
+#         bobTtags    = bobTtags[:len(aliceTtags)]
+#         bobChannels = bobChannels[:len(aliceChannels)]
 
     indexes_of_order = aliceTtags.argsort(kind = "mergesort")
     aliceChannels = take(aliceChannels,indexes_of_order)
     aliceTtags = take(aliceTtags,indexes_of_order)
     
     indexes_of_order = bobTtags.argsort(kind = "mergesort")
-#     
     bobChannels = take(bobChannels,indexes_of_order)
     bobTtags = take(bobTtags,indexes_of_order)
+    
     calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64), bobChannels.astype(uint8)) 
     
 #     #------------------------------------

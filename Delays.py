@@ -118,7 +118,7 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
 
     
     buf_num = ttag.getfreebuffer()
-    bufN = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+    bufN = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e11))
     bufN.resolution = resolution
     bufN.channels = max(A_B_channels)+1
     bufN.addarray(A_B_channels,A_B_timetags)

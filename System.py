@@ -197,7 +197,7 @@ if __name__ == '__main__':
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    # load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
+#     load_save_raw_file(raw_file_dir, alice_channels, bob_channels)
     
     
     set_printoptions(edgeitems = 20)
@@ -226,8 +226,8 @@ if __name__ == '__main__':
     print "BEFORE EQUAL"
     print alice_thread.ttags
     print bob_thread.ttags
-    print "MAIN: Making datasets equal."
-    make_equal_size(alice_thread, bob_thread)
+#     print "MAIN: Making datasets equal."
+#     make_equal_size(alice_thread, bob_thread)
 
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
@@ -243,12 +243,12 @@ if __name__ == '__main__':
     bob_thread.frame_size = optimal_frame_size
     
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
-    alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
-    bob_binary_laser_string = load("./DarpaQKD/bobLaserString.npy")    
-    print "-->>",alice_binary_laser_string
-    print "-->>",bob_binary_laser_string
-    print "coincide all", float(len(intersect1d(alice_binary_laser_string, bob_binary_laser_string)))/len(alice_binary_laser_string)
-    
+#     alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
+#     bob_binary_laser_string = load("./DarpaQKD/bobLaserString.npy")    
+#     print "-->>",alice_binary_laser_string[alice_chan == 0]
+#     print "-->>",bob_binary_laser_string[bob_chan == 4]
+#     print "coincide all",len(intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])) ,float(len(intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])))/len(alice_binary_laser_string[alice_chan == 0])
+#     print ":-: ",intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])
     main_event.clear()
     alice_thread.do_set()
     bob_thread.do_set()
@@ -266,9 +266,9 @@ if __name__ == '__main__':
         pass
     
     
-    print "Making datasets equal..."
-    (alice_thread.frame_occupancies,bob_thread.frame_occupancies) = make_data_string_same_size(alice_thread.frame_occupancies,bob_thread.frame_occupancies)
-    (alice_thread.frame_locations,bob_thread.frame_locations) = make_data_string_same_size(alice_thread.frame_locations,bob_thread.frame_locations)
+#     print "Making datasets equal..."
+#     (alice_thread.frame_occupancies,bob_thread.frame_occupancies) = make_data_string_same_size(alice_thread.frame_occupancies,bob_thread.frame_occupancies)
+#     (alice_thread.frame_locations,bob_thread.frame_locations) = make_data_string_same_size(alice_thread.frame_locations,bob_thread.frame_locations)
     alice_thread.do_set()
     bob_thread.do_set()
 #     while alice_thread.event.is_set() or bob_thread.event.is_set():
