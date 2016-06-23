@@ -163,8 +163,12 @@ class PartyThread(threading.Thread):
                 pass
             self.race_flag = True
 # ===================================================================   
-            print "BEFORE ", self.ttags        
-            self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.resolution,self.coincidence_window_radius)
+            print "BEFORE ", self.ttags
+            if self.name == "alice":
+                print "!!!!!!!!!!"        
+                self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.resolution,self.coincidence_window_radius)
+            else:
+                self.binary_string_laser = self.ttags
             print "Laser string, ",self.binary_string_laser,self.channels
             save("./DarpaQKD/"+self.name+"LaserString.npy",self.binary_string_laser)
 #             self.binary_string_laser = self.ttags
