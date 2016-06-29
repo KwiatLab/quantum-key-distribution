@@ -60,14 +60,16 @@ def create_binary_string_from_laser_pulses(timetags, resolution, coincidence_win
     print "length in bins", window_length_in_bins
     number_of_timetags = len(timetags)
 #     print "last 20",timetags[:-20]
-    sparse_bin_string = zeros(number_of_timetags*window_length_in_bins, dtype = uint64)
+    sparse_bin_string = zeros(number_of_timetags*(window_length_in_bins+1), dtype = uint64)
     h = 0
+#     print "~~~",timetags[-1]
     for i in range(number_of_timetags):
 #         print around(i/float(number_of_timetags), 5)
 #         print "timetag",timetags[i]
-
+        
         for j in range(-window_radius,window_radius+1):
 #             print "Start from: ",timetags[i]+j
+            
             sparse_bin_string[h] = timetags[i]+j
 #             print "->",sparse_bin_string[h]
             h+=1

@@ -5,6 +5,7 @@ Created on Jun 4, 2016
 '''
 import sys
 import threading
+import json
 from os import system
 import DataProcessing
 from numpy import *
@@ -16,6 +17,80 @@ from ParityCheckMatrixGen import gallager_matrix
 from SlepianWolf import encode
 import timeit
 
+def get_coinc(alice_timetags,alice_channels,bob_timetags,bob_channels,ch1,ch2,window_radius):
+    coinc = 0
+    alice_ttags = alice_timetags[alice_channels == ch1]
+    bob_ttags = bob_timetags[bob_channels == ch2]
+    
+    for a,b in zip(alice_ttags,bob_ttags):
+        if b >= a-window_radius and b<=a+window_radius:
+            coinc+=1
+    return coinc
+
+def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_radius):
+    indexes = {}
+    timetags = timetags.astype(uint64)
+    
+    sync_block_size = int(sync_period/resolution)
+    D_block_size = coincidence_window_radius*2+1
+
+
+    for i in range(len(timetags)):
+        ith = (timetags[i] % sync_block_size) % D_block_size
+        indexes[int(timetags[i]/sync_block_size)] = ith
+    
+    return indexes
+
+def bob_corrected(bob_ttags,sync_period,resolution,coincidence_window_radius):
+    bob_ttag_dict = {}
+    sync_block_size = int(sync_period/resolution)
+    D_block_size = coincidence_window_radius*2+1
+    
+    for i in range(len(bob_ttags)):
+        ith = (bob_ttags[i] % sync_block_size)
+        bob_ttag_dict[int(bob_ttags[i]/sync_block_size)] = ith
+    return bob_ttag_dict
+
+def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius):
+    number_of_bins_in_block = coincidence_window_radius*2+1
+    corrected_string = array([])
+    
+    for a_key in alice_dict.keys():
+        if bob_dict.has_key(a_key):
+            distance_away = min(number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key], abs(alice_dict[a_key] - bob_dict[a_key]), number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key])
+#             print "\t",number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key], abs(alice_dict[a_key] - bob_dict[a_key]), number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]
+            if distance_away <= coincidence_window_radius:
+                if alice_dict[a_key]-coincidence_window_radius > 0:
+                    left_boundary = alice_dict[a_key]-coincidence_window_radius
+                else:
+                    left_boundary = number_of_bins_in_block + (alice_dict[a_key]-coincidence_window_radius)
+       
+                if alice_dict[a_key] + coincidence_window_radius <= number_of_bins_in_block:
+                    right_boundary = alice_dict[a_key] + coincidence_window_radius
+                else:
+                    right_boundary = coincidence_window_radius - (number_of_bins_in_block - alice_dict[a_key])
+    
+#                 print alice_dict[a_key],distance_away,left_boundary,right_boundary
+    
+                shift = 0
+                if bob_dict[a_key] >= left_boundary:
+                    shift = distance_away
+#                 elif bob_dict[a_key] < left_boundary:
+#                     bob_dict[a_key] = -1
+#                     continue
+                elif bob_dict[a_key] <= right_boundary:
+                    shift = -distance_away
+#                 elif bob_dict[a_key] > right_boundary:
+# #                     bob_dict[a_key] = -1
+#                     continue
+
+                bob_dict[a_key] += shift
+                bob_ttag_dict[a_key]  += shift
+            else:
+                bob_dict[a_key] = -1
+
+    return bob_ttag_dict
+     
 def make_equal_size(alice_thread,bob_thread):
     if (len(alice_thread.ttags) > len(bob_thread.ttags)):
         alice_thread.ttags = alice_thread.ttags[:bob_thread.ttags]
@@ -28,6 +103,9 @@ def loadprep(name,channelArray):
     sys.stdout.flush()
     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+    all_ttags = all_ttags[:len(all_ttags)/10]
+    all_channels = all_channels[:len(all_channels)/10]
+    
     ttags = array([])
     channels = array([])
     for ch in channelArray:
@@ -73,7 +151,7 @@ def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
     belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max):
+    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
@@ -82,6 +160,8 @@ class PartyThread(threading.Thread):
         self.delays = None
         self.channelArray = channelArray
         self.coincidence_window_radius = coincidence_window_radius
+        self.sync_period = sync_period
+        self.other_party_correction = None
         self.ttags = None
         self.channels = None
         self.buffer = None
@@ -120,19 +200,15 @@ class PartyThread(threading.Thread):
             print "Applying Delays"
             
             print "BEFORE DELAYS", self.ttags,self.channels
-            for delay,ch in zip(self.delays,self.channels):
+            for delay,ch in zip(self.delays,self.channelArray):
                 if delay < 0 and self.name == "bob":
-                    print "abs-->>",(abs(delay)).astype(int)
-                    self.ttags += (abs(delay)).astype(uint64)
+                    print "abs-->>",(abs(delay)).astype(uint64)
+                    self.ttags[self.channels == ch] += (abs(delay)).astype(uint64)
                 elif delay >= 0 and self.name == "alice":
                     print "-->",delay
-                    self.ttags += delay.astype(uint64)
+                    self.ttags[self.channels == ch] += delay.astype(uint64)
              
 
-
-            negatives = where(self.ttags < 0)
-            self.ttags = delete(self.ttags,negatives)
-            self.channels = delete(self.channels,negatives)
             
             indexes_of_order = self.ttags.argsort(kind = "mergesort")
             self.channels = take(self.channels,indexes_of_order)
@@ -163,24 +239,28 @@ class PartyThread(threading.Thread):
                 pass
             self.race_flag = True
 # ===================================================================   
-            print "BEFORE ", self.ttags
+#             print "BEFORE ", self.ttags
             if self.name == "alice":
                 print "!!!!!!!!!!"        
-                self.binary_string_laser = create_binary_string_from_laser_pulses(self.ttags,self.resolution,self.coincidence_window_radius)
+                self.binary_string_laser = get_timetag_corrections(self.ttags[self.channels == 0], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution))
+                print self.ttags
+#   print "----",self.binary_string_laser
+                bob_thread.other_party_correction = self.binary_string_laser
             else:
-                self.binary_string_laser = self.ttags
-            print "Laser string, ",self.binary_string_laser,self.channels
-            save("./DarpaQKD/"+self.name+"LaserString.npy",self.binary_string_laser)
+                self.binary_string_laser = get_timetag_corrections(self.ttags[self.channels == 4], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution))
+                print self.ttags
 #             self.binary_string_laser = self.ttags
-#             print "New Binary laser string", self.binary_string_laser
-            print self.name+" Calculating frame occupancies and locations:\n"
-            self.frame_occupancies = calculate_frame_occupancy(self.binary_string_laser,self.frame_size)
-            self.frame_locations = calculate_frame_locations_daniels_mapping(self.binary_string_laser, self.frame_occupancies, self.frame_size)
-            print "Locations",self.name,"--->\n",self.frame_locations
-            print self.name.upper()+": Notifying main that finished with laser strings. Will be waiting for"
+# #             print "New Binary laser string", self.binary_string_laser
+#             print self.name+" Calculating frame occupancies and locations:\n"
+#             self.frame_occupancies = calculate_frame_occupancy(self.binary_string_laser,self.frame_size)
+#             self.frame_locations = calculate_frame_locations_daniels_mapping(self.binary_string_laser, self.frame_occupancies, self.frame_size)
+#             print "Locations",self.name,"--->\n",self.frame_locations
+#             print self.name.upper()+": Notifying main that finished with laser strings. Will be waiting for"
 
 #===========READY TO ANNOUNCE======================
             self.do_clear()
+            print "Done with laser string"
+
             while main_event.is_set():
                 pass
             print self.name.upper()+": I was released and will do error calc.\n"    
@@ -206,8 +286,9 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 950e-12
+    coincidence_window_radius = 1200e-12
     delay_max = 1e-5
+    sync_period = 7.8125e-9
     
     alice_event = threading.Event()
     alice_event.set()
@@ -215,8 +296,8 @@ if __name__ == '__main__':
     bob_event = threading.Event()
     bob_event.set() 
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max)
+    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period)
+    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period)
     start = timeit.default_timer()  
    
     main_event = threading.Event()
@@ -227,9 +308,9 @@ if __name__ == '__main__':
     print "MAIN: will wait till AB finished loading data."
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
-    print "BEFORE EQUAL"
-    print alice_thread.ttags
-    print bob_thread.ttags
+#     print "BEFORE EQUAL"
+#     print alice_thread.ttags
+#     print bob_thread.ttags
 #     print "MAIN: Making datasets equal."
 #     make_equal_size(alice_thread, bob_thread)
 
@@ -242,10 +323,11 @@ if __name__ == '__main__':
     
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
+
     optimal_frame_size = 2048
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
-    
+
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
 #     alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
 #     bob_binary_laser_string = load("./DarpaQKD/bobLaserString.npy")    
@@ -256,6 +338,7 @@ if __name__ == '__main__':
     main_event.clear()
     alice_thread.do_set()
     bob_thread.do_set()
+
     while not(alice_thread.race_flag and bob_thread.race_flag):
         pass
     main_event.set()
@@ -265,11 +348,52 @@ if __name__ == '__main__':
 #     print "The maximum entropy was found to be ",max_shared_binary_entropy," with frame size: ",optimal_frame_size
 #     print "Now will be framming data with size: ", optimal_frame_size
 
-
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
+    a_dict = alice_thread.binary_string_laser
+    b_dict = bob_thread.binary_string_laser
+    print "coinc window radius in bins", int(coincidence_window_radius/resolution)
+    print "sync period size in bins ", int(sync_period/resolution)
+    bob_full_dict = bob_corrected(bob[bob_chan == 4], sync_period, resolution, int(coincidence_window_radius/resolution))
+#    
+    print "before correction",len(intersect1d(bob[bob_chan == 4], alice[alice_chan == 0]))
     
+    bob_corrected = do_correction(bob_full_dict, b_dict, a_dict, int(coincidence_window_radius/resolution))
+#     print "bob_corrected"
     
+#     savetxt("./DarpaQKD/bobCorrectedSystem.txt",json.dumps(bob_corrected))
+    target = open("./DarpaQKD/bobCorrectedSystem.txt", 'w')
+    target.write(json.dumps(a_dict))
+    
+    corrected_ttags = zeros(len(bob_corrected.keys()), dtype = uint64)
+    i=0
+    sync_block_size = int(sync_period/resolution)
+
+    
+    for key in bob_corrected.keys():
+        corrected_ttags[i] = int(str(key))*100+int(float(str(bob_corrected[key])))
+        i+=1
+    indexes_of_order = corrected_ttags.argsort(kind = "mergesort")
+#     self.channels = take(self.channels,indexes_of_order)
+    corrected_ttags = take(corrected_ttags,indexes_of_order)
+#     print corrected_ttags
+
+    
+    save("./DarpaQKD/bobNotCorrectedT.npy",bob)
+    save("./DarpaQKD/bobCorrectedT.npy",corrected_ttags)
+    save("./DarpaQKD/bobCorrectedC.npy",bob_chan)
+    
+    save("./DarpaQKD/aliceCorrectedT.npy",alice)
+    save("./DarpaQKD/aliceCorrectedC.npy",alice_chan)
+
+    
+#     print "-->",corrected_ttags
+    print "coincidences with correction !!!! ->",len(intersect1d(corrected_ttags, alice))
+#     print get_coinc(alice, alice_chan, bob, bob_chan, 0, 4, int(coincidence_window_radius/resolution))
+
+#     print "->>Coincidences", len(intersect1d(bob_corrected.values(), alice))/len(bob)
+#     print bob_thread.binary_string_laser
+#     print alice_thread.binary_string_laser
 #     print "Making datasets equal..."
 #     (alice_thread.frame_occupancies,bob_thread.frame_occupancies) = make_data_string_same_size(alice_thread.frame_occupancies,bob_thread.frame_occupancies)
 #     (alice_thread.frame_locations,bob_thread.frame_locations) = make_data_string_same_size(alice_thread.frame_locations,bob_thread.frame_locations)

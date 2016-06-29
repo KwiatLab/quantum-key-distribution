@@ -3,11 +3,13 @@ Created on Jun 8, 2016
 
 @author: laurynas
 '''
-from numpy import concatenate,take,uint64,save, int64,zeros,where,argwhere
+from numpy import concatenate,take,uint64,save, int64,zeros,where,argwhere,intersect1d,load,array,append,\
+    savetxt
 import sys
 import graphs
 import ttag
 from ttag_delays import getDelay, getDelays
+from Statistics import create_binary_string_from_laser_pulses as laser
 
 def remake_coincidence_matrix(coincidence_matrix):
     channels = len(coincidence_matrix[0][:])
@@ -20,38 +22,17 @@ def remake_coincidence_matrix(coincidence_matrix):
             matrix[i][j] = coincidence_matrix[j][channels/2+i]
     return matrix
 
-def get_coincidences(A_B_timetags,A_B_channels,ch1,ch2,coincidence_window_in_bins):
-    print A_B_timetags[19311548-2:19311548+2], A_B_channels[19311548-2:19311548+2]
+def get_coinc(alice_timetags,alice_channels,bob_timetags,bob_channels,ch1,ch2,window_radius):
+    coinc = 0
+    alice_ttags = alice_timetags[alice_channels == ch1]
+    bob_ttags = bob_timetags[bob_channels == ch2]
     
-    alice_ttags = A_B_timetags[A_B_channels == ch1]
-    print "Pthon calculate 0 occured", len(alice_ttags)
-    bob_ttags = A_B_timetags[A_B_channels == ch2]
-    print ch1,"--",ch2
-    print "length in bins", coincidence_window_in_bins
-    coincidences = 0
-    alice_max = A_B_timetags[-1]
-    bob_max = A_B_timetags[-1]
-    print "Python",alice_max,bob_max
-    l=0
-    m = len(bob_ttags)
-    smaller = min([len(alice_ttags),len(bob_ttags)])
-    alice_start = bob_start = smaller
-    if smaller == len(alice_ttags):
-        bob_start = argwhere(bob_ttags >=alice_ttags[-1])[0]
-    else:
-        alice_start = argwhere(alice_ttags>=bob_ttags[-1])[0]
-         
-    for a_ttag,b_ttag in zip(alice_ttags[alice_start::-1],bob_ttags[bob_start::-1]):
-        m-=1 
-#         print m,")",a_ttag+ int(coincidence_window_in_bins/2), ">=", b_ttag         
-        if alice_max- a_ttag + int(coincidence_window_in_bins/2) >= bob_max- b_ttag:
-            l+=1
-#             print l,")palyginimas su radius - ",int(coincidence_window_in_bins/2),": ",a_ttag + int(coincidence_window_in_bins/2),">=",b_ttag
-            coincidences+=1
+    for a,b in zip(alice_ttags,bob_ttags):
+        if b >= a-window_radius and b<=a+window_radius:
+            coinc+=1
+    return coinc
 
-    return coincidences
-
-def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max):
+def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max):
 #     print "TIMETAGS BEFORE DELAYS:", A_B_timetags,A_B_channels
     print("- Applying Delays")
     
@@ -72,8 +53,46 @@ def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels
     buffer.resolution = 78.125e-12
     buffer.channels = max(A_B_channels)+1
     buffer.addarray(A_B_channels,A_B_timetags)
+
+    a_ttags = array([])
+    a_channels = array([])
+    for ch in [0,1,2,3]:
+        a_ttags = append(a_ttags, A_B_timetags[A_B_channels == ch])
+        a_channels = append(a_channels, A_B_channels[A_B_channels == ch])
+                
+    indexes_of_order = a_ttags.argsort(kind = "mergesort")
+    a_channels = take(a_channels,indexes_of_order)
+    a_ttags = take(a_ttags,indexes_of_order)
     
     
+    
+
+    a_laser_delay_string = laser(a_ttags[a_channels == 3], resolution, coincidence_window_radius)
+
+
+
+
+
+    b_ttags = array([])
+    b_channels = array([])
+    for ch in [4,5,6,7]:
+        b_ttags = append(b_ttags, A_B_timetags[A_B_channels == ch])
+        b_channels = append(b_channels, A_B_channels[A_B_channels == ch])
+                
+    indexes_of_order = b_ttags.argsort(kind = "mergesort")
+    b_channels = take(b_channels,indexes_of_order)
+    b_ttags = take(b_ttags,indexes_of_order)
+
+
+    savetxt("./DarpaQKD/a_ttags3-7",a_ttags[a_channels == 3],fmt='%15d')
+    print "with getcoinc",get_coinc(a_ttags, a_channels, b_ttags, b_channels, 3, 7, int(coincidence_window_radius/resolution))
+    savetxt("./DarpaQKD/intersection3-7.npy",intersect1d(a_laser_delay_string,b_ttags[b_channels == 7]),fmt='%10d')
+    print "Coincidences WITH delays",len(intersect1d(a_laser_delay_string,b_ttags[b_channels == 7]))
+
+
+
+
+
 #     (d1,d2) = getDelays(buffer,channels1,channels2,delaymax=coincidence_window_radius,time=(A_B_timetags[-1]-1)*buffer.resolution)
 #     A_B_timetags = A_B_timetags.astype(float)
 #     for i in range(len(channels1)):
@@ -92,7 +111,45 @@ def check_correlations(resolution, A_B_timetags, A_B_channels,channels1,channels
     with_delays = (bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius))
     print "__WITH_DELAYS-->\n",with_delays
     print "__REMADE-->>\n",remake_coincidence_matrix(with_delays)
-    print "with delays: number of 0 channels and number of channel 4",len(A_B_timetags[A_B_channels == 0]),len(A_B_timetags[A_B_channels == 4])
+    
+    print"----",len(bobTtags)
+    bobTtags = load("./DarpaQKD/bobCorrectedT.npy")
+    bobChannels = load("./DarpaQKD/bobCorrectedC.npy")
+    aliceTtags = load("./DarpaQKD/aliceCorrectedT.npy")
+    aliceChannels = load("./DarpaQKD/aliceCorrectedC.npy")
+
+
+    a_laser_string = laser(aliceTtags[aliceChannels==3], resolution, coincidence_window_radius)
+    print a_laser_string
+    print "Coincidences WITH CORRECTIONS",len(intersect1d(a_laser_string,bobTtags[bobChannels == 7]))/float(len(bobTtags[bobChannels == 7]))
+
+
+
+    print len(bobTtags)
+    A_B_timetags1 = concatenate([aliceTtags,bobTtags])
+    A_B_channels1 = concatenate([aliceChannels,bobChannels])
+ 
+    indexes_of_order = A_B_timetags1.argsort(kind = "mergesort")
+    A_B_channels1 = take(A_B_channels1,indexes_of_order)
+    A_B_timetags1 = take(A_B_timetags1,indexes_of_order)
+  
+    
+    buf_num = ttag.getfreebuffer()
+    bufCorrec = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
+    bufCorrec.resolution = resolution
+    bufCorrec.channels = max(A_B_channels1)+1
+    bufCorrec.addarray(A_B_channels1,A_B_timetags1.astype(uint64))
+
+    with_corrections = (bufCorrec.coincidences((A_B_timetags1[-1]-1)*bufCorrec.resolution, coincidence_window_radius))
+    print "__WITH_Corrections-->\n",with_corrections
+    print "__REMADE-->>\n",remake_coincidence_matrix(with_corrections)
+ 
+
+    
+#     a_laser_string = laser(aliceTtags[:len(aliceTtags)/88000], resolution, int(coincidence_window_radius/resolution))
+#     print "Coincidences with delays",len(intersect1d(a_laser_string,bobTtags[:len(aliceTtags)/88000]))
+#     print "with delays: number of 0 channels and number of channel 4",len(A_B_timetags[A_B_channels == 1]),len(A_B_timetags[A_B_channels == 4])
+#     print "COINcidences between 0 and 4 after delays: ", get_coinc(aliceTtags, aliceChannels, bobTtags, bobChannels, 0, 4, int(coincidence_window_radius/resolution))
 
     print "__DIFF___->>>>\n",matrix_before.astype(int64)-(bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius).astype(int64))
     
@@ -122,14 +179,24 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
     bufN.resolution = resolution
     bufN.channels = max(A_B_channels)+1
     bufN.addarray(A_B_channels,A_B_timetags)
-    print aliceChannels[-20:],aliceTtags[-20:]
-    print bobChannels[-20:],bobTtags[-20:]
+#     print aliceChannels[-20:],aliceTtags[-20:]
+#     print bobChannels[-20:],bobTtags[-20:]
 #     print A_B_channels[-20:],A_B_timetags[-20:]
     coincidences_before = (bufN.coincidences((A_B_timetags[-1]-1)*bufN.resolution, coincidence_window_radius))
     print "__BEFORE DELAYS-->\n",coincidences_before
     print "__REMADE-->>\n",remake_coincidence_matrix(coincidences_before)
+    
+    
+    
+    
+    a_laser_string = laser(aliceTtags[aliceChannels==3], resolution, coincidence_window_radius)
+    print "Coincidences without delays",len(intersect1d(a_laser_string,bobTtags[bobChannels == 7]))/float(len(bobTtags[bobChannels == 7]))
 
-    print "number of 0 channels and number of channel 4",len(A_B_timetags[A_B_channels == 0]),len(A_B_timetags[A_B_channels == 4])
+
+
+
+
+#     print "number of 0 channels and number of channel 4",len(A_B_timetags[A_B_channels == 0]),len(A_B_timetags[A_B_channels == 4])
 #     print "Coincidences between 0 and 4 by Laurynas: ", get_coincidences(A_B_timetags, A_B_channels, 0, 4, coincidence_window_radius*2/bufN.resolution)
 #     print "That's it"
     
@@ -168,7 +235,7 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
     sys.stdout.flush()
     
     print "will now plotting corellations to check if it looks good."
-    check_correlations(resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max)
+    check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max)
 #     
     print("Saving delays to file.")
     save("./resultsLaurynas/Delays/delays.npy",delays/bufN.resolution)

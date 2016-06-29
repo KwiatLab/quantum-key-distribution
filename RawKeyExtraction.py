@@ -155,6 +155,12 @@ if (__name__ == '__main__'):
     bobChannels = take(bobChannels,indexes_of_order)
     bobTtags = take(bobTtags,indexes_of_order)
     
+    aliceTtags = aliceTtags[:len(aliceTtags)]
+    aliceChannels = aliceChannels[:len(aliceChannels)]
+    
+    bobTtags = bobTtags[:len(bobTtags)]
+    bobChannels = bobChannels[:len(bobChannels)]
+    
     calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64), bobChannels.astype(uint8)) 
     
 #     #------------------------------------
