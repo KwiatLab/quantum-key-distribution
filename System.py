@@ -459,7 +459,7 @@ if __name__ == '__main__':
     print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"
     alice_thread.received_string = bob_thread.non_zero_positions[:int(len(bob_thread.non_zero_positions)*announce_fraction)]
     bob_thread.received_string = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
-    print "Succesfully ANNOUNCED will release threads", len(intersect1d(alice_thread.received_string, bob_thread.received_string))/float(len(alice_thread.received_string))
+    print "Succesfully ANNOUNCED will release threads", sum(alice_thread.received_string == bob_thread.received_string)/float(len(alice_thread.received_string))
     main_event.clear()
     
     print "MAIN: Encoded syndromes"
