@@ -157,9 +157,9 @@ def calculate_frame_entropy(frame_locations, frame_size):
 
 def calculate_frame_occupancy(binary_string, frame_size):
     
-    number_of_frames = around(binary_string[-1]/frame_size + 1)
-    # print "Total number of frames: ", number_of_frames
-    frame_occupancy = zeros(int(number_of_frames),dtype=uint16)
+    number_of_frames = int(binary_string[-1]/frame_size)+1
+
+    frame_occupancy = zeros((number_of_frames),dtype=uint64)
     
     for event_index in binary_string:
         frame_occupancy[int(event_index)/frame_size] +=1    

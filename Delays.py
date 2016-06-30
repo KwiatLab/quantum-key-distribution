@@ -85,7 +85,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
 
 
     savetxt("./DarpaQKD/a_ttags3-7",a_ttags[a_channels == 3],fmt='%15d')
-    print "with getcoinc",get_coinc(a_ttags, a_channels, b_ttags, b_channels, 3, 7, int(coincidence_window_radius/resolution))
+#     print "with getcoinc",get_coinc(a_ttags, a_channels, b_ttags, b_channels, 3, 7, int(coincidence_window_radius/resolution))
     savetxt("./DarpaQKD/intersection3-7.npy",intersect1d(a_laser_delay_string,b_ttags[b_channels == 7]),fmt='%10d')
     print "Coincidences WITH delays",len(intersect1d(a_laser_delay_string,b_ttags[b_channels == 7]))
 
