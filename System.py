@@ -336,16 +336,16 @@ if __name__ == '__main__':
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
     
-    
+#     
 #     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
 #     print statistics
     
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
-    optimal_frame_size = 64
-    alice_thread.frame_size = optimal_frame_size
-    bob_thread.frame_size = optimal_frame_size
+#     optimal_frame_size = 64
+#     alice_thread.frame_size = optimal_frame_size
+#     bob_thread.frame_size = optimal_frame_size
 
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
 #     alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
@@ -399,6 +399,12 @@ if __name__ == '__main__':
         
     bob_thread.ttags = corrected_ttags
     print "coincidences with correction !!!! ->",len(intersect1d(bob_thread.ttags, alice_thread.ttags))
+    
+    
+        
+    statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
+    print statistics
+    
     
     main_event.clear()
     alice_thread.do_set()

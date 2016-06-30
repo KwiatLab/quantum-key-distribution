@@ -402,14 +402,14 @@ def resequence(locations,occupancies,frame_size):
     return actual_binary_string_bool
 
 
-def calculateStatistics(alice,bob,alice_pol,bob_pol,coincidence_window_radius,resolution):
+def calculateStatistics(alice,bob,alice_pol,bob_pol,resolution):
     print "I entered"
     #saveprep("main_high",*prep())
 #     numpy.set_printoptions(edgeitems = 100) 
     
 
-    alice_binary_string_laser = create_binary_string_from_laser_pulses(alice,coincidence_window_radius,resolution)
-    bob_binary_string_laser = create_binary_string_from_laser_pulses(bob,coincidence_window_radius,resolution)
+#     alice_binary_string_laser = create_binary_string_from_laser_pulses(alice,coincidence_window_radius,resolution)
+#     bob_binary_string_laser = create_binary_string_from_laser_pulses(bob,coincidence_window_radius,resolution)
     binary_entropies = {}
 #================FOR LOOP STARTS (recommended to go 1-13======================================================================================================================
     for frame_size in 2**array(range(1,13)):
@@ -417,8 +417,8 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol,coincidence_window_radius,re
         print("DOING ALPHABET",frame_size)
 #======================PROCESSING DATA=========================================================
         print "Calculating frame occupancies..."
-        alice_frame_occupancies = calculate_frame_occupancy(alice_binary_string_laser, frame_size)
-        bob_frame_occupancies   = calculate_frame_occupancy(bob_binary_string_laser,frame_size)
+        alice_frame_occupancies = calculate_frame_occupancy(alice, frame_size)
+        bob_frame_occupancies   = calculate_frame_occupancy(bob,frame_size)
 #         print "--->",len(where(alice_frame_occupancies==1)),len(alice_binary_string_laser/frame_size),alice_frame_occupancies
                          
         b_entropy_a = calculate_binary_single_entropy(alice_frame_occupancies, frame_size)
