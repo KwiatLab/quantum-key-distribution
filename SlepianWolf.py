@@ -850,9 +850,9 @@ class SW_LDPC(object):
     
     #Returns the number of errors the current sequence has compared to the known 'correct' sequence
     def distanceFromCorrect(self):
-#         if (self.correctResult==None):
-#             print "Correct result is not provided so cannot estimate error of decoded string"
-#             return None
+        if (self.correctResult==None):
+            print "Correct result is not provided so cannot estimate error of decoded string"
+            return None
         return float(self.errors(self.correctResult,self.sequenceGuess))/len(self.correctResult),self.errors(self.correctResult,self.sequenceGuess)
         
     #Guesses the current values and failed probabilities    

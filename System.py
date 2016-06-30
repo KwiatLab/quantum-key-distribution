@@ -142,21 +142,21 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
     save("./DarpaQKD/bobTtags.npy",timetags[in1d(channels, bob_channels)])
     
     
-def LDPC_encode(party,column_weight = 3,number_parity_edges = 6):
-    total_string_length = len(party.received_string)
+def LDPC_encode(alice_thread,column_weight = 3,number_parity_edges = 6):
+    total_string_length = len(alice_thread.received_string)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
-    party.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
+    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
     
-    party.syndromes=encode(party.parity_matrix,party.non_zero_positions[:len(party.received_string)],party.frame_size)
+    alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions[:len(alice_thread.received_string)],alice_thread.frame_size)
  
-def LDPC_decode(party,decoder='bp-fft', iterations=70, frozenFor=5):
-    party.sent_string = party.non_zero_positions[:len(party.received_string)]
+def LDPC_decode(bob_thread,decoder='bp-fft', iterations=70, frozenFor=5):
+    bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
-    transition_matrix = transitionMatrix_data2(party.sent_string,party.received_string,party.frame_size)
-    prior_probability_matrix = sequenceProbMatrix(party.sent_string,transition_matrix)
-    belief_propagation_system = SW_LDPC(party.parity_matrix, party.syndromes, prior_probability_matrix, original=alice_thread.sent_string,decoder=decoder)
-    
+    transition_matrix = transitionMatrix_data2(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
+    prior_probability_matrix = sequenceProbMatrix(bob_thread.received_string,transition_matrix)
+    belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.sent_string,decoder=decoder)
+    print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
     belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
@@ -343,9 +343,9 @@ if __name__ == '__main__':
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
-#     optimal_frame_size = 64
-#     alice_thread.frame_size = optimal_frame_size
-#     bob_thread.frame_size = optimal_frame_size
+    optimal_frame_size = 64
+    alice_thread.frame_size = optimal_frame_size
+    bob_thread.frame_size = optimal_frame_size
 
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
 #     alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
@@ -401,9 +401,9 @@ if __name__ == '__main__':
     print "coincidences with correction !!!! ->",len(intersect1d(bob_thread.ttags, alice_thread.ttags))
     
     
-        
-    statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
-    print statistics
+#         
+#     statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
+#     print statistics
     
     
     main_event.clear()
@@ -461,13 +461,17 @@ if __name__ == '__main__':
     print "Succesfully ANNOUNCED will release threads", len(alice_thread.non_zero_positions),len(alice_thread.received_string)
     main_event.clear()
     
+    print "MAIN: Encoded syndromes"
+    
     LDPC_encode(alice_thread)
     
 #=============Sending syndrome values and parity check matrix?=====
+    print "Sending syndrome values and parity check matrix"
+    
     bob_thread.syndromes = alice_thread.syndromes
     bob_thread.parity_matrix = alice_thread.parity_matrix
 #==================================================================
-    
+    print "Will be trying to decode and correct the string"
     LDPC_decode(bob_thread)
         
 #     stop = timeit.default_timer()
