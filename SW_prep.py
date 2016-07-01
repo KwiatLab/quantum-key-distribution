@@ -41,10 +41,9 @@ def transitionMatrix_symmetric(alph,err):
 # corresponding letter's transition probability to each alphabet letter
 def sequenceProbMatrix(seq,trans):
     res = zeros((trans.shape[0],len(seq)))
-    
-    for number_of_parity_check_eqns in xrange(len(seq)):
+    for el in xrange(len(seq)):
         # takes every column and assigns transmat columns          
-        res[:,number_of_parity_check_eqns]=trans[:,seq[number_of_parity_check_eqns]]
+        res[:,el]=trans[:,int(seq[el])]
     
     return res
 
@@ -98,15 +97,24 @@ def transitionNumbers_data(mat1,mat2,alph):
         lmat1[number_of_parity_check_eqns,:][mat2==number_of_parity_check_eqns] = 1
         lmat2[:,number_of_parity_check_eqns][mat1==number_of_parity_check_eqns] = 1
     return dot(lmat1,lmat2)
-
+def transitionNumbers_data2_python(mat1,mat2,alph):
+    rmat=zeros((alph,alph))
+    datalen=int(len(mat1))
+    alph=int(alph)
+    i = 0
+    while i <datalen:
+        rmat[int(mat2[i])-1][int(mat1[i])-1]+=1
+        i+=1
+    return rmat
+    
 def transitionNumbers_data2(mat1,mat2,alph):
     rmat=zeros((alph+1,alph+1))
     datalen=int(len(mat1))
     alph=int(alph+1)
     code="""
-        long long number_of_parity_check_eqns = 0;
-        for (;number_of_parity_check_eqns<datalen;number_of_parity_check_eqns++) {
-            rmat[mat2[number_of_parity_check_eqns]*alph+mat1[number_of_parity_check_eqns]]+=1;
+        long long i = 0;
+        for (;i<datalen;i++) {
+            rmat[mat2[i]*alph+mat1[i]]+=1;
         }
     """
     inline(code,['mat1','mat2','rmat','datalen','alph'])
@@ -123,7 +131,9 @@ def transitionNumbers_data2(mat1,mat2,alph):
 def transitionMatrix_data(mat1,mat2,alph):
     return normalizecol(transitionNumbers_data(mat1,mat2,alph))
 def transitionMatrix_data2(mat1,mat2,alph):
-    return normalizecol(transitionNumbers_data2(mat1,mat2,alph))  
+    return normalizecol(transitionNumbers_data2(mat1,mat2,alph))
+def transitionMatrix_data2_python(mat1,mat2,alph):
+    return normalizecol(transitionNumbers_data2_python(mat1,mat2,alph))    
 #SHOWMAT
 #Shows a visual representation of the matrix by colorcoding values
 def showmat(mat):

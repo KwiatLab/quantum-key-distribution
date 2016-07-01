@@ -480,6 +480,7 @@ class sw_mathc(sw_math):
     #Given mat, normalize each column independently. Makes sure there are no negative values
     def normalizecol(self,mat):
         res = array(mat.real,copy=True,dtype=float64)
+#         print mat
 #         print "RES", res
         #Sometimes     FFT returns tiny negative value -> normalize that to 0:
         res[res<0.00]=0.00
@@ -580,7 +581,7 @@ class swnb_node(sw_mathc):
     #Recieve recieves the conditional probability of the given node according to the object
     def receive(self,obj,prob):
         self.inputMatrix[:,self.connections.index(obj)] = prob
-    
+#         print "received",self.connections.index(obj),prob
     def runAlgorithm(self):
 #         print "Ima here!"
         return self.bitProbabilities(self.inputMatrix,ones(self.inputMatrix.shape[0]))
@@ -589,6 +590,7 @@ class swnb_node(sw_mathc):
         #Find the resulting probability matrix
 #         print "IM HEEREEEE!!!!!!!!!!!!!!!!",type(self)
         mat = self.runAlgorithm()
+#         print "MAT:",mat
 #         print "\n\n RESULTING PROB MATRIX\n",mat,"\n\n"
 
         
@@ -620,7 +622,7 @@ class sw_node(sw_mathc):
     #Recieve recieves the conditional probability of the given node according to the object
     def receive(self,obj,prob):
         self.inputs[self.connections.index(obj)]=prob
-    
+#         print "receive",self.connections.index(obj),prob
     def runAlgorithm(self):
         #TODO: Need the correct way to do logs, and to avoid infnities that were very annoying!
         
@@ -850,16 +852,16 @@ class SW_LDPC(object):
     
     #Returns the number of errors the current sequence has compared to the known 'correct' sequence
     def distanceFromCorrect(self):
-        if (self.correctResult==None):
-            print "Correct result is not provided so cannot estimate error of decoded string"
-            return None
+#         if (self.correctResult==None):
+#             print "Correct result is not provided so cannot estimate error of decoded string"
+#             return -1
         return float(self.errors(self.correctResult,self.sequenceGuess))/len(self.correctResult),self.errors(self.correctResult,self.sequenceGuess)
         
     #Guesses the current values and failed probabilities    
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
-#             print "Sequence Guess: ",self.sequenceGuess
+#         print "Sequence Guess: ",self.sequenceGuess
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
         
     #Propagate bit values to parity check nodes
@@ -905,8 +907,9 @@ class SW_LDPC(object):
             #Allow ending if the algorithm got stuck at a value
             if (self.iteration > frozenFor and len(set(self.iterFailedParities[-frozenFor:]))==1):
                 break
-        
-        return self.sequenceFailedParities
+            
+        return self.getGuess()
+#         return self.sequenceFailedParities
     
     #Return the current best guess sequence
     def getGuess(self):

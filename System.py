@@ -31,7 +31,7 @@ def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_r
     
     return indexes
 
-def bob_corrected(bob_ttags,sync_period,resolution,coincidence_window_radius):
+def full_timetags_correction(bob_ttags,sync_period,resolution,coincidence_window_radius):
     bob_ttag_dict = {}
     sync_block_size = int(sync_period/resolution)
     D_block_size = coincidence_window_radius*2+1
@@ -112,8 +112,8 @@ def loadprep(name,channelArray):
     sys.stdout.flush()
     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-    all_ttags = all_ttags[:len(all_ttags)/10]
-    all_channels = all_channels[:len(all_channels)/10]
+    all_ttags = all_ttags[:len(all_ttags)/100]
+    all_channels = all_channels[:len(all_channels)/100]
     
     ttags = array([])
     channels = array([])
@@ -143,22 +143,24 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
     
     
 def LDPC_encode(alice_thread,column_weight = 3,number_parity_edges = 6):
-    total_string_length = len(alice_thread.received_string)
+    total_string_length = len(alice_thread.non_zero_positions)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
     
-    alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions[:len(alice_thread.received_string)],alice_thread.frame_size)
+    alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
  
-def LDPC_decode(bob_thread,decoder='bp-fft', iterations=70, frozenFor=5):
+def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=5):
+#   TODO chanage this to secret_key  
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
-    transition_matrix = transitionMatrix_data2(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
-    prior_probability_matrix = sequenceProbMatrix(bob_thread.received_string,transition_matrix)
-    belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=bob_thread.received_string,decoder=decoder)
-    print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
+    transition_matrix = transitionMatrix_data2_python(bob_thread.received_string,bob_thread.sent_string,bob_thread.frame_size)
+    prior_probability_matrix = sequenceProbMatrix(alice_thread.non_zero_positions,transition_matrix)
+    print "SHAPE",prior_probability_matrix.shape
+    belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.non_zero_positions,decoder=decoder)
+#     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
     
-    belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
+    return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
     def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period,ch):
@@ -190,8 +192,8 @@ class PartyThread(threading.Thread):
         self.sent_string = None
         self.delay_max = delay_max
         self.event.set()
-        self.full_dict = None
-        self.corrected_dict = None
+        self.full_dict = array([])
+        self.corrected_dict = array([])
     def do_clear(self):
         self.event.clear()
     def do_set(self):
@@ -251,13 +253,18 @@ class PartyThread(threading.Thread):
             self.race_flag = True
 # ===================================================================   
 #             print "BEFORE ", self.ttags
-            if self.name == "alice":
-                self.binary_string_laser = get_timetag_corrections(self.ttags[self.channels == self.ch], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution))
-                bob_thread.other_party_correction = self.binary_string_laser
-            else:
-                self.binary_string_laser = get_timetag_corrections(self.ttags[self.channels == self.ch], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution))
+            self.correction_array = array([])
             
-            self.full_dict = bob_corrected(self.ttags[self.channels == self.ch], self.sync_period, self.resolution, int(self.coincidence_window_radius/self.resolution))
+            if self.name == "alice":
+                for channel in self.channelArray:
+                    self.correction_array = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution)))
+                bob_thread.alice_correction_array = self.correction_array
+            else:
+                for channel in self.channelArray:
+                    self.correction_array = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution)))
+   
+            for channel in self.channelArray:
+                self.full_dict = append(self.full_dict,full_timetags_correction(self.ttags[self.channels == channel], self.sync_period, self.resolution, int(self.coincidence_window_radius/self.resolution)))
 
 #             print self.name.upper()+": Notifying main that finished with laser strings. Will be waiting for"
             print "Correction information is caluclated and RELEASING MAIN thread to do correction"
@@ -345,6 +352,7 @@ if __name__ == '__main__':
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
     optimal_frame_size = 32  
+    factor = 1
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
 
@@ -374,11 +382,17 @@ if __name__ == '__main__':
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
     
-    print "before correction",len(intersect1d(bob_thread.ttags[bob_thread.channels == bob_thread.ch], alice_thread.ttags[alice_thread.channels == alice_thread.ch]))
+    for a_ch, b_ch in zip(alice_thread.channelArray, bob_thread.channelArray): 
+        print "before correction",len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
     
 #     bob_thread.corrected_dict = do_correction(bob_thread.full_dict, bob_thread.binary_string_laser, alice_thread.binary_string_laser, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
-    bob_thread.corrected_dict = do_correction(bob_thread.full_dict, bob_thread.binary_string_laser, alice_thread.binary_string_laser, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_thread.full_dict)
-
+    
+    total_ttags = 0
+    print "should be 4", len(bob_thread.full_dict)
+    for bob_full_dict, bob_correction, alice_correction, alice_full_dict in zip(bob_thread.full_dict, bob_thread.correction_array, alice_thread.correction_array, alice_thread.full_dict):
+        correction = do_correction(bob_full_dict, bob_correction, alice_correction, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
+        bob_thread.corrected_dict = append(bob_thread.corrected_dict, correction)
+        total_ttags +=len(correction.keys())
 #     print "bob_corrected"
 
     
@@ -386,13 +400,13 @@ if __name__ == '__main__':
 #     target = open("./DarpaQKD/bobCorrectedSystem.txt", 'w')
 #     target.write(json.dumps(alice_thread.binary_string_laser))
     
-    corrected_ttags = zeros(len(bob_thread.corrected_dict.keys()), dtype = uint64)
+    corrected_ttags = zeros(total_ttags, dtype = uint64)
     i=0
     sync_block_size = int(bob_thread.sync_period/bob_thread.resolution)
-
-    for key in bob_thread.corrected_dict.keys():
-        corrected_ttags[i] = int(str(key))*100+int(float(str(bob_thread.corrected_dict[key])))
-        i+=1
+    for corrected_dict in bob_thread.corrected_dict:
+        for key in corrected_dict.keys():
+            corrected_ttags[i] = int(str(key))*100+int(float(str(corrected_dict[key])))
+            i+=1
         
     indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
 #     self.channels = take(self.channels,indexes_of_order)
@@ -453,6 +467,12 @@ if __name__ == '__main__':
     alice_thread.non_zero_positions = alice_non_zero_positions_in_frame
     bob_thread.non_zero_positions = bob_non_zero_positions_in_frame
     
+    bob_thread.non_zero_positions -=1
+    alice_thread.non_zero_positions -=1
+    
+    bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
+    alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
+    
     print "NONZERO: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(bob_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(bob_thread.non_zero_positions)
 #  =======================Will be announcing some part of the string==================================
     announce_fraction = 0.3
@@ -465,7 +485,7 @@ if __name__ == '__main__':
     print "MAIN: Encoded syndromes"
     
     LDPC_encode(alice_thread)
-    
+    print len(alice_thread.non_zero_positions),len(bob_thread.non_zero_positions)
 #=============Sending syndrome values and parity check matrix?=====
     print "Sending syndrome values and parity check matrix"
     
@@ -473,8 +493,16 @@ if __name__ == '__main__':
     bob_thread.parity_matrix = alice_thread.parity_matrix
 #==================================================================
     print "Will be trying to decode and correct the string"
-    LDPC_decode(bob_thread)
-        
+    bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
+    print "Secret key matches: ", (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions))
+    
+    print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
+    print "MBit/s", (((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions))/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    
+    print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
+    savetxt("./Secret_keys/alice_secret_key1.txt", alice_thread.non_zero_positions,fmt = "%2d")
+    savetxt("./Secret_keys/bob_secret_key1.txt", bob_thread.non_zero_positions,fmt = "%2d")
+    
 #     stop = timeit.default_timer()
 #     print stop - start 
       
