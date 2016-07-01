@@ -153,7 +153,7 @@ def LDPC_encode(alice_thread,column_weight = 3,number_parity_edges = 6):
 def LDPC_decode(bob_thread,decoder='bp-fft', iterations=70, frozenFor=5):
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
-    transition_matrix = transitionMatrix_data2(alice_thread.received_string,bob_thread.sent_string,bob_thread.frame_size)
+    transition_matrix = transitionMatrix_data2(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
     prior_probability_matrix = sequenceProbMatrix(bob_thread.received_string,transition_matrix)
     belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=bob_thread.received_string,decoder=decoder)
     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
@@ -344,7 +344,7 @@ if __name__ == '__main__':
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
-    optimal_frame_size = 8  
+    optimal_frame_size = 32  
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
 

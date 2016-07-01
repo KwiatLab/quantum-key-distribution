@@ -11,7 +11,7 @@ def gallager_matrix(number_of_parity_check_eqns,
                     column_weight,
                     row_weight):
     
-    print number_of_parity_check_eqns/row_weight
+#     print number_of_parity_check_eqns/row_weight
     basic_sub_matrix = zeros((number_of_bits/row_weight, number_of_bits))
     for i in range(1,number_of_bits/row_weight+1):
         for j in range((i-1)*row_weight+1, i*row_weight+1):
@@ -30,7 +30,8 @@ def gallager_matrix(number_of_parity_check_eqns,
         parity_check_matrix[(p-1)*(number_of_bits/row_weight):(p)*(number_of_bits/row_weight),:number_of_bits-1] +=perm_sub_matrix[:,(p-1)*number_of_bits:p*number_of_bits-1] 
  
     return parity_check_matrix
-#     return parity_check_matrix    
+
+
 if __name__ == '__main__':
     number_of_bits = 24
     column_weight = 4
