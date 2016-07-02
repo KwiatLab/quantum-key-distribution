@@ -210,6 +210,7 @@ class PartyThread(threading.Thread):
             print self.name.upper()+": Loading .npy data"
             (self.ttags,self.channels) = loadprep(self.name, self.channelArray, data_factor)
             print "Loading delays"
+            print "TIME: ", self.ttags[-1]*self.resolution," in seconds"
             self.delays = load("./resultsLaurynas/Delays/delays.npy")
             print self.delays
             
@@ -327,8 +328,8 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 10
-    optimal_frame_size = 256  
+    data_factor = 100
+    optimal_frame_size = 16  
     factor = 1  
     
     
