@@ -45,6 +45,7 @@ def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius,
     number_of_bins_in_block = coincidence_window_radius*2+1
     corrected_string = array([])
     info = array([])
+    coincidence_pulses = {}
     for a_key in alice_dict.keys():
         shift = 0
         if bob_dict.has_key(a_key):
@@ -92,10 +93,11 @@ def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius,
 #                     print info_el
                     info = append(info,info_el)
 #                     print "-",info
+                coincidence_pulses[a_key] = bob_ttag_dict[a_key]  
             else:
                 bob_ttag_dict[a_key] = -1
     savetxt("./DarpaQKD/info.npy",info,fmt='%76s')            
-    return bob_ttag_dict
+    return (bob_ttag_dict,coincidence_pulses)
      
 def make_equal_size(alice_thread,bob_thread):
 
@@ -351,7 +353,7 @@ if __name__ == '__main__':
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
-    optimal_frame_size = 32  
+    optimal_frame_size = 256  
     factor = 1
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
@@ -390,9 +392,9 @@ if __name__ == '__main__':
     total_ttags = 0
     print "should be 4", len(bob_thread.full_dict)
     for bob_full_dict, bob_correction, alice_correction, alice_full_dict in zip(bob_thread.full_dict, bob_thread.correction_array, alice_thread.correction_array, alice_thread.full_dict):
-        correction = do_correction(bob_full_dict, bob_correction, alice_correction, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
-        bob_thread.corrected_dict = append(bob_thread.corrected_dict, correction)
-        total_ttags +=len(correction.keys())
+        correction, coincidence_pulses = do_correction(bob_full_dict, bob_correction, alice_correction, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
+        bob_thread.corrected_dict = append(bob_thread.corrected_dict, coincidence_pulses)
+        total_ttags +=len(coincidence_pulses.keys())
 #     print "bob_corrected"
 
     
