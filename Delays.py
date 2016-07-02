@@ -173,7 +173,7 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
     A_B_channels = take(A_B_channels,indexes_of_order)
     A_B_timetags = take(A_B_timetags,indexes_of_order)
 
-    
+    print "TIME: ", A_B_timetags[-1]*resolution, " in seconds"     
     buf_num = ttag.getfreebuffer()
     bufN = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e11))
     bufN.resolution = resolution
