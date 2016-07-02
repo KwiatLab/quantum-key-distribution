@@ -109,13 +109,13 @@ def make_equal_size(alice_thread,bob_thread):
         bob_thread.channels = bob_thread.channels[:len(alice_thread.channels)]
         
 # Dataset is now 10 smaller than all set (i.e. it's about 0.9s )
-def loadprep(name,channelArray):
+def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-    all_ttags = all_ttags[:len(all_ttags)/100]
-    all_channels = all_channels[:len(all_channels)/100]
+    all_ttags = all_ttags[:len(all_ttags)/data_factor]
+    all_channels = all_channels[:len(all_channels)/data_factor]
     
     ttags = array([])
     channels = array([])
@@ -165,11 +165,12 @@ def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenF
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period,ch):
+    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period,ch,data_factor):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
         self.ch = ch
+        self.data_factor = data_factor
         self.resolution = resolution
         self.raw_file_name = None
         self.delays = None
@@ -207,7 +208,7 @@ class PartyThread(threading.Thread):
 #             system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
 
             print self.name.upper()+": Loading .npy data"
-            (self.ttags,self.channels) = loadprep(self.name, self.channelArray)
+            (self.ttags,self.channels) = loadprep(self.name, self.channelArray, data_factor)
             print "Loading delays"
             self.delays = load("./resultsLaurynas/Delays/delays.npy")
             print self.delays
@@ -323,10 +324,16 @@ if __name__ == '__main__':
     alice_event.set()
    
     bob_event = threading.Event()
-    bob_event.set() 
+    bob_event.set()
     
-    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_alice)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_bob)
+     
+    data_factor = 10
+    optimal_frame_size = 256  
+    factor = 1  
+    
+    
+    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_alice, data_factor = data_factor)
+    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_bob, data_factor = data_factor)
     start = timeit.default_timer()  
    
     main_event = threading.Event()
@@ -353,8 +360,6 @@ if __name__ == '__main__':
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 
-    optimal_frame_size = 256  
-    factor = 1
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
 
