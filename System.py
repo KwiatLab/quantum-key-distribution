@@ -314,7 +314,7 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 1500e-12
+    coincidence_window_radius = 2800e-12
     delay_max = 1e-5
     sync_period = 7.8125e-9
     
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     
      
     data_factor = 100
-    optimal_frame_size = 32  
+    optimal_frame_size = 256
     factor = 1  
     
     
@@ -390,13 +390,16 @@ if __name__ == '__main__':
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
     
+    total = 0
     for a_ch, b_ch in zip(alice_thread.channelArray, bob_thread.channelArray): 
-        print "before correction",len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
+        numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
+        print "Coincidencs before correction between",a_ch,"-",b_ch,numb
+        total+=numb
+    print "TOTAL COINCIDENCES BEFORE",total
     
 #     bob_thread.corrected_dict = do_correction(bob_thread.full_dict, bob_thread.binary_string_laser, alice_thread.binary_string_laser, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
     
     total_ttags = 0
-    print "should be 4", len(bob_thread.full_dict)
     for bob_full_dict, bob_correction, alice_correction, alice_full_dict in zip(bob_thread.full_dict, bob_thread.correction_array, alice_thread.correction_array, alice_thread.full_dict):
         correction, coincidence_pulses = do_correction(bob_full_dict, bob_correction, alice_correction, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
         bob_thread.corrected_dict = append(bob_thread.corrected_dict, coincidence_pulses)
@@ -421,7 +424,8 @@ if __name__ == '__main__':
     corrected_ttags = take(corrected_ttags,indexes_of_order)    
         
     bob_thread.ttags = corrected_ttags
-    print "coincidences with correction !!!! ->",len(intersect1d(bob_thread.ttags, alice_thread.ttags))
+    inter = len(intersect1d(bob_thread.ttags, alice_thread.ttags))
+    print "TOTAL COINCIDENCES AFTER",inter,"%",inter/float(len(alice_thread.ttags))
     
     
 #         
@@ -467,7 +471,7 @@ if __name__ == '__main__':
     mutual_frames_with_occupancy_one = logical_and(alice_thread.frame_occupancies==1,bob_thread.frame_occupancies==1)
     alice_non_zero_positions_in_frame = alice_thread.frame_locations[mutual_frames_with_occupancy_one]
     bob_non_zero_positions_in_frame   = bob_thread.frame_locations[mutual_frames_with_occupancy_one]
-    print "size of frame occ",len(alice_thread.frame_occupancies)," and mutual", len(alice_non_zero_positions_in_frame)
+    print "size of frame occ",len(alice_thread.frame_occupancies)," and mutual non zero", len(alice_non_zero_positions_in_frame)
 
     print "Alice and Bob frame location DATA saved for LDPC procedure."
 # #     fmt="%i" saves signed decimal integers
@@ -481,7 +485,7 @@ if __name__ == '__main__':
     bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
     alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
     
-    print "NONZERO: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(bob_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(bob_thread.non_zero_positions)
+    print "FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
 #  =======================Will be announcing some part of the string==================================
     announce_fraction = 0.3
     print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"
@@ -507,7 +511,8 @@ if __name__ == '__main__':
     print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
     print "MBit/s", (((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions))/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
     
-    print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
+    if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
+        print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_thread.non_zero_positions,fmt = "%2d")
     savetxt("./Secret_keys/bob_secret_key1.txt", bob_thread.non_zero_positions,fmt = "%2d")
     

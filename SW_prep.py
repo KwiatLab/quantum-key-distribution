@@ -105,6 +105,14 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
     while i <datalen:
         rmat[int(mat2[i])-1][int(mat1[i])-1]+=1
         i+=1
+#     print rmat
+
+#    trying to fix 0 probability problem
+    for i in range(alph):
+        if sum(rmat[:,i]) == 0: 
+            rmat[i][i] +=1
+#         print "Col",i,sum(rmat[:,i])
+        
     return rmat
     
 def transitionNumbers_data2(mat1,mat2,alph):

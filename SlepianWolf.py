@@ -483,18 +483,21 @@ class sw_mathc(sw_math):
 #         print mat
 #         print "RES", res
         #Sometimes     FFT returns tiny negative value -> normalize that to 0:
-        res[res<0.00]=0.00
+        res[res<0.00]=1e-9
         
         #Sum up all the values in each column
         colsum= sum(res,0)
 #         print"Colsums", colsum
         if (any(colsum<=0.0) or any(colsum >= Inf)):
-            self.err("Column normalization failed! Expect error explosion!")
-            self.err("Matrix:")
+#             self.err("Column normalization failed! Expect error explosion!")
+#             self.err("Matrix:")
             self.err(mat)
-            self.err("Column Sums:")
-            self.err(colsum)
+#             self.err("Column Sums:")
+#             self.err(colsum)
             raise Exception("Column normalization failed!") #This should NOT happen!
+#             print "Column normalization failed!"
+#             return res
+#             colsum = 1
         
         #Divide every entry by the necessary value to normalize
         res/=colsum
@@ -595,9 +598,10 @@ class swnb_node(sw_mathc):
 
         
         #Propagate the values to each of the associated matrix's connections
+
         for i in xrange(len(self.connections)):
             self.connections[i].receive(self,mat[:,i])
-
+            
 class sw_node(sw_mathc):
     
     def __init__(self):
