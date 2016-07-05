@@ -329,7 +329,7 @@ if __name__ == '__main__':
     
      
     data_factor = 100
-    optimal_frame_size = 16  
+    optimal_frame_size = 32  
     factor = 1  
     
     
@@ -425,9 +425,9 @@ if __name__ == '__main__':
     
     
 #         
-    statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
-    print statistics
-    
+#     statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
+#     print statistics
+#     
     
     main_event.clear()
     alice_thread.do_set()
