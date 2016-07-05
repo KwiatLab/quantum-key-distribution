@@ -199,7 +199,18 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
         frame_locations[frame_number] = map_value
         # print "Final map value: ", map_value
     return frame_locations
-
+def calculate_frame_locations_for_single_occ(binary_string,frame_occupancies,frame_size):
+    number_of_frames = len(frame_occupancies)
+    frame_locations = zeros(number_of_frames,dtype=uint32)
+    number_of_timetags = len(binary_string)
+    frame_numbers = binary_string.copy()
+    frame_numbers /= frame_size
+    
+    for i in xrange(number_of_timetags):
+        frame_locations[frame_numbers[i]] = (binary_string[i] % frame_size)+1
+    
+    return frame_locations
+    
 def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, frame_size):
     number_of_frames = len(frame_occupancies)
     frame_locations = zeros(number_of_frames,dtype=uint32)
@@ -207,12 +218,12 @@ def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, f
     frame_numbers = binary_string.copy()
     frame_numbers /= frame_size
 
-    for number_of_parity_check_eqns in xrange(number_of_timetags):
+    for i in xrange(number_of_timetags):
         mapping_value = 0
-        frame_number = frame_numbers[number_of_parity_check_eqns]
-        # old mapping: mapping_value = ((binary_string[number_of_parity_check_eqns] % frame_size)+1) * power(frame_size,(frame_occupancies[frame_number]-1)) 
+        frame_number = frame_numbers[i]
+        # old mapping: mapping_value = ((binary_string[i] % frame_size)+1) * power(frame_size,(frame_occupancies[frame_number]-1)) 
         # position + (occupancy-1)(frame_size)               
-        mapping_value = ((binary_string[number_of_parity_check_eqns] % frame_size)+1) + pow((frame_size*(frame_occupancies[frame_number]-1)),1/(frame_occupancies[frame_number]))
+        mapping_value = ((binary_string[i] % frame_size)+1) + pow((frame_size*(frame_occupancies[frame_number]-1)),1/(frame_occupancies[frame_number]))
 #         print frame_occupancies[frame_number],"\tmap",mapping_value
         frame_locations[frame_number] += mapping_value
 

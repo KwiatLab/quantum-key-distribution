@@ -479,11 +479,12 @@ class sw_mathc(sw_math):
     #NORMALIZECOL
     #Given mat, normalize each column independently. Makes sure there are no negative values
     def normalizecol(self,mat):
+        zeroReplace = 1E-17
         res = array(mat.real,copy=True,dtype=float64)
 #         print mat
 #         print "RES", res
         #Sometimes     FFT returns tiny negative value -> normalize that to 0:
-        res[res<0.00]=1e-9
+        res[res<0.00]=0
         
         #Sum up all the values in each column
         colsum= sum(res,0)
@@ -817,6 +818,7 @@ class SW_LDPC(object):
     def prepare(self, prior_probability_matrix):
         #Set up the necessary arrays
         number_of_parity_check_eqns = self.parityMatrix.shape[1]
+#         print number_of_parity_check_eqns, "---<"
         #bits have length of big number (iterate with value 40000)         
         self.bits = [None]*number_of_parity_check_eqns
         #checks have length of alice_sw length (length of dataset)

@@ -46,6 +46,12 @@ def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius,
     corrected_string = array([])
     info = array([])
     coincidence_pulses = {}
+    
+    padding_zeros = 0   
+    while number_of_bins_in_block != 0:
+        number_of_bins_in_block /= 10 
+        padding_zeros +=1 
+    
     for a_key in alice_dict.keys():
         shift = 0
         if bob_dict.has_key(a_key):
@@ -89,7 +95,7 @@ def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius,
                 before = bob_ttag_dict[a_key] 
                 bob_ttag_dict[a_key]  += shift
                 if bob_ttag_dict[a_key] != alice_ttag_dict[a_key]:
-                    info_el = str(int(str(a_key))*100 + int(float(str(alice_ttag_dict[a_key])))).ljust(12)+("("+str(int(str(a_key))*100 + int(float(str(alice_dict[a_key]))))+")").ljust(13)+"  "+str(int(str(a_key))*100 + int(float(str(before)))).ljust(12)+("("+str(int(str(a_key))*100 + int(float(str(bob_dict[a_key]))))+")").ljust(15)+"  "+str(shift).ljust(6)+"  "+str(int(str(a_key))*100 + int(float(str(bob_ttag_dict[a_key])))).ljust(12)
+                    info_el = str(int(str(a_key))*(10**padding_zeros) + int(float(str(alice_ttag_dict[a_key])))).ljust(12)+("("+str(int(str(a_key))*(10**padding_zeros)+ int(float(str(alice_dict[a_key]))))+")").ljust(13)+"  "+str(int(str(a_key))*(10**padding_zeros) + int(float(str(before)))).ljust(12)+("("+str(int(str(a_key))*(10**padding_zeros) + int(float(str(bob_dict[a_key]))))+")").ljust(15)+"  "+str(shift).ljust(6)+"  "+str(int(str(a_key))*(10**padding_zeros) + int(float(str(bob_ttag_dict[a_key])))).ljust(12)
 #                     print info_el
                     info = append(info,info_el)
 #                     print "-",info
@@ -144,15 +150,15 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
     save("./DarpaQKD/bobTtags.npy",timetags[in1d(channels, bob_channels)])
     
     
-def LDPC_encode(alice_thread,column_weight = 3,number_parity_edges = 6):
+def LDPC_encode(alice_thread,column_weight = 4,number_parity_edges = 6):
     total_string_length = len(alice_thread.non_zero_positions)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
     
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
- 
-def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=5):
+    
+def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=10):
 #   TODO chanage this to secret_key  
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
@@ -160,6 +166,7 @@ def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenF
     prior_probability_matrix = sequenceProbMatrix(alice_thread.non_zero_positions,transition_matrix)
     print "SHAPE",prior_probability_matrix.shape
     belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.non_zero_positions,decoder=decoder)
+#     print "after"
 #     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
     
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
@@ -284,7 +291,10 @@ class PartyThread(threading.Thread):
             self.frame_occupancies = calculate_frame_occupancy(self.ttags,self.frame_size)
 #             print sum(self.frame_occupancies), " == ",len(self.ttags)
 
-            self.frame_locations = calculate_frame_locations_daniels_mapping(self.ttags, self.frame_occupancies, self.frame_size)
+#             self.frame_locations = calculate_frame_locations_daniels_mapping(self.ttags, self.frame_occupancies, self.frame_size)
+            self.frame_locations = calculate_frame_locations_for_single_occ(self.ttags, self.frame_occupancies, self.frame_size)
+
+
             print "Locations",self.name,"--->\n",self.frame_locations
             
             self.do_clear()
@@ -314,9 +324,15 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 2800e-12
+    coincidence_window_radius = 2500e-12
     delay_max = 1e-5
     sync_period = 7.8125e-9
+    
+    D_block_size = int(coincidence_window_radius/resolution)*2+1
+    padding_zeros = 0
+    while D_block_size != 0:
+        D_block_size /= 10 
+        padding_zeros +=1 
     
     ch_alice = 3
     ch_bob = 7
@@ -416,7 +432,7 @@ if __name__ == '__main__':
     sync_block_size = int(bob_thread.sync_period/bob_thread.resolution)
     for corrected_dict in bob_thread.corrected_dict:
         for key in corrected_dict.keys():
-            corrected_ttags[i] = int(str(key))*100+int(float(str(corrected_dict[key])))
+            corrected_ttags[i] = int(str(key))*(10**padding_zeros)+int(float(str(corrected_dict[key])))
             i+=1
         
     indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
