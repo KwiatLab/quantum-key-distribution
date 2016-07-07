@@ -35,7 +35,7 @@ if __name__ == '__main__':
             offset = 2
         elif ("buffer_2") in file:
             offset = 2
-        data = load(file)
+        data = loadtxt(file)
         data[:,0] += offset
         
         chan_main_data = append(chan_main_data,data[:,0])
