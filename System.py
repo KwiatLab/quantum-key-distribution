@@ -15,6 +15,7 @@ from Statistics import *
 from ParityCheckMatrixGen import gallager_matrix
 from SlepianWolf import encode
 import timeit
+from SW_prep import randomMatrix
 
 
 def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_radius):
@@ -155,20 +156,21 @@ def LDPC_encode(alice_thread,column_weight = 4,number_parity_edges = 6):
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
-    
+#     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
-def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=10):
+def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
 #   TODO chanage this to secret_key  
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
     transition_matrix = transitionMatrix_data2_python(bob_thread.received_string,bob_thread.sent_string,bob_thread.frame_size)
     prior_probability_matrix = sequenceProbMatrix(alice_thread.non_zero_positions,transition_matrix)
-    print "SHAPE",prior_probability_matrix.shape
+#     print "SHAPE",prior_probability_matrix.shape
+    print "Creating belief propagation system"
     belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.non_zero_positions,decoder=decoder)
-#     print "after"
+    print "Belief propagation system is created"
 #     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
-    
+    print "Will be doing decoding using belief prop system"
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
     
 class PartyThread(threading.Thread):
@@ -344,7 +346,7 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 100
+    data_factor = 70
     optimal_frame_size = 256
     factor = 1  
     
@@ -513,7 +515,7 @@ if __name__ == '__main__':
     print "MAIN: Encoded syndromes"
     
     LDPC_encode(alice_thread)
-    print len(alice_thread.non_zero_positions),len(bob_thread.non_zero_positions)
+    print "CORRECT FRACTION",sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions)/float(len(alice_thread.non_zero_positions))
 #=============Sending syndrome values and parity check matrix?=====
     print "Sending syndrome values and parity check matrix"
     

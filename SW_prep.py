@@ -42,9 +42,10 @@ def transitionMatrix_symmetric(alph,err):
 def sequenceProbMatrix(seq,trans):
     res = zeros((trans.shape[0],len(seq)))
     for el in xrange(len(seq)):
-        # takes every column and assigns transmat columns          
+        # takes every column and assigns transmat columns
+#         print seq[el]          
         res[:,el]=trans[:,int(seq[el])]
-    
+  
     return res
 
 #############################################################################################################
@@ -103,7 +104,8 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
     alph=int(alph)
     i = 0
     while i <datalen:
-        rmat[int(mat2[i])-1][int(mat1[i])-1]+=1
+#         print mat1[i]," - ",mat2[i]
+        rmat[int(mat2[i])][int(mat1[i])]+=1
         i+=1
 #     print rmat
 
@@ -112,7 +114,10 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
         if sum(rmat[:,i]) == 0: 
             rmat[i][i] +=1
 #         print "Col",i,sum(rmat[:,i])
-        
+    for i in range(alph):
+        for j in range(alph):
+            if rmat[i][j] == 0:
+                rmat[i][j] = 1E-17
     return rmat
     
 def transitionNumbers_data2(mat1,mat2,alph):

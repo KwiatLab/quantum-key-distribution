@@ -106,6 +106,7 @@ class sw_math(object):
     #ADDALLCOL
     #Given a matrix mat, returns a column vector, which contains the elementwise sum of all
     #columns in the matrix
+    #sums of every row
     def addallcol(self,mat):
         return sum(mat,1)
     
@@ -460,11 +461,13 @@ class sw_math(object):
     #LOGBITPROBABILITIES
     #It is exactly the same as bitProbabilities, except that as an input it takes log likelihood
     def logbitProbabilities(self,mat,prev):
+#         print "prob vector",self.addcol(mat)+prev.reshape((len(prev),1))
         return self.addcol(mat)+prev.reshape((len(prev),1))
     
     #LOGBITVALUE
     #Same as bitValue, except it uses the log likelihood matrices
     def logbitValue(self,mat,prev):
+#         print self.addallcol(mat)+prev
         return (self.addallcol(mat)+prev).argmax()
 
 ############################################################################################
@@ -484,7 +487,7 @@ class sw_mathc(sw_math):
 #         print mat
 #         print "RES", res
         #Sometimes     FFT returns tiny negative value -> normalize that to 0:
-        res[res<0.00]=0
+        res[res<0.00]=zeroReplace
         
         #Sum up all the values in each column
         colsum= sum(res,0)
@@ -595,11 +598,9 @@ class swnb_node(sw_mathc):
 #         print "IM HEEREEEE!!!!!!!!!!!!!!!!",type(self)
         mat = self.runAlgorithm()
 #         print "MAT:",mat
-#         print "\n\n RESULTING PROB MATRIX\n",mat,"\n\n"
 
-        
         #Propagate the values to each of the associated matrix's connections
-
+#         print "@@@@@@@@@@@@@@@@@@@@@"
         for i in xrange(len(self.connections)):
             self.connections[i].receive(self,mat[:,i])
             
@@ -630,11 +631,12 @@ class sw_node(sw_mathc):
 #         print "receive",self.connections.index(obj),prob
     def runAlgorithm(self):
         #TODO: Need the correct way to do logs, and to avoid infnities that were very annoying!
-        
+#         print "here????"
         return None
     
     def propagate(self):
         #Find the values to propagate
+#         print "Will actually do propagation in super class"
         vals = self.runAlgorithm()
         
         #Propagate the values to each of the associated connections
@@ -650,6 +652,7 @@ class SW_nbBit(swnb_node):
         super(SW_nbBit,self).__init__()
         self.priorProbability = priorProbability
     def runAlgorithm(self):
+#         print "HEEEE"
 #         print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
         arg = self.bitProbabilities(self.inputMatrix,self.priorProbability)
 #         print "\n\t Normalization Argument:\n",arg
@@ -674,7 +677,16 @@ class SW_nblogBit(swnb_node):
         super(SW_nblogBit,self).__init__()
         self.priorProbability = log(priorProbability)
     def runAlgorithm(self):
-        return None
+        arg = self.logbitProbabilities(self.inputMatrix,self.priorProbability)
+#         if self.getValue() == 0:
+#             print "Computed probabilities:\n",arg
+#         print "\n\t Normalization Argument:\n",arg
+        return_value = self.normalizecol(arg)
+#         print"\n\t After (Normalized) Argument\n",return_value 
+#         if self.getValue() == 0:
+#             print "And after normalization:\n",return_value
+
+        return return_value
     def getValue(self):
         return self.logbitValue(self.inputMatrix,self.priorProbability)
 
@@ -683,7 +695,7 @@ class SW_nblogCheck(swnb_node):
         super(SW_nblogCheck,self).__init__()
         self.syndromeValue = syndrome
     def runAlgorithm(self):
-        return None
+        return self.parityProbabilities_log(self.inputMatrix,self.syndromeValue)
 
 #A debugging decoder. Used to print out values to check if everything is fine
 class SW_nbBit_dbg(swnb_node):
@@ -737,14 +749,14 @@ class SW_Bit(sw_node):
     def getValue(self):
         return 0
         
+        
+        
 class SW_Check(sw_node):
     def __init__(self,syndrome):
         super(SW_nbCheck,self).__init__()
         self.syndromeValue = syndrome
     def runAlgorithm(self):
         return self.parityProbabilities(self.inputMatrix,self.syndromeValue)
-    
-
 ############################################################################################
 # The following class actually sets the algorithm up and does the slepian-wolf 
 # decoding
@@ -759,10 +771,12 @@ class SW_LDPC(object):
     }
     
     def __init__(self,parityMatrix, syndromes, data_probability_matrix, decoder=None, original=None,verbose=True):
+#         print "Parity matrix\n",parityMatrix
         self.parityMatrix = parityMatrix
         self.syndromeValues = syndromes
+#         print data_probability_matrix
         self.alphabet = data_probability_matrix.shape[0] #The probability matrix's column size is the alphabet
-        print "Alphabet",self.alphabet
+#         print "Alphabet",self.alphabet
         self.correctResult = original
         self.verbose = verbose
         
@@ -782,10 +796,10 @@ class SW_LDPC(object):
         
         #Sets the correct decoder for the sequence
         self.setDecoder(decoder)
-        
+
         #Create the propagating structure using the decoder
         self.prepare(data_probability_matrix)
-        
+#         print "Data prob matrix\n",data_probability_matrix
         #Set the current sequence guess and failed parities
         self.guessSequence()
         
@@ -817,19 +831,21 @@ class SW_LDPC(object):
     #Set the decoding mechanism up, connect all of the bitnodes to checknodes in the correct way and prepare to decode
     def prepare(self, prior_probability_matrix):
         #Set up the necessary arrays
-        number_of_parity_check_eqns = self.parityMatrix.shape[1]
+        number_of_bits = self.parityMatrix.shape[1]
+#         print "Number of bits",number_of_bits
 #         print number_of_parity_check_eqns, "---<"
         #bits have length of big number (iterate with value 40000)         
-        self.bits = [None]*number_of_parity_check_eqns
+        self.bits = [None]*number_of_bits
         #checks have length of alice_sw length (length of dataset)
-        number_of_bits = self.parityMatrix.shape[0]         
-        self.checks = [None]*number_of_bits
+        number_of_parity_check_eqns = self.parityMatrix.shape[0]   
+#         print "Number of parity check eqns",number_of_parity_check_eqns
+      
+        self.checks = [None]*number_of_parity_check_eqns
         
         #Create all of the objects
-        for i in xrange(number_of_parity_check_eqns):
-#             
-            self.bits[i] = self.bitClass(prior_probability_matrix[:,i])
         for i in xrange(number_of_bits):
+            self.bits[i] = self.bitClass(prior_probability_matrix[:,i])
+        for i in xrange(number_of_parity_check_eqns):
             self.checks[i] = self.checkClass(self.syndromeValues[i])
         
         #Now connect the nodes together according to the parity check matrix
@@ -839,9 +855,9 @@ class SW_LDPC(object):
             self.bits[bitNumbers[i]].addConnection(self.checks[checkNumbers[i]])
             
         #Finally, prepare the nodes to begin propagating values!
-        for i in xrange(number_of_parity_check_eqns):
-            self.bits[i].prepare(self.alphabet)
         for i in xrange(number_of_bits):
+            self.bits[i].prepare(self.alphabet)
+        for i in xrange(number_of_parity_check_eqns):
             self.checks[i].prepare(self.alphabet)
         
         #And now the code is ready to start propagating!
@@ -867,11 +883,12 @@ class SW_LDPC(object):
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
-#         print "Sequence Guess: ",self.sequenceGuess
+#         print "Guessing the sequence:",self.sequenceGuess, "and actual is ", self.correctResult
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
         
     #Propagate bit values to parity check nodes
     def propagateBits(self):
+        print "Will be propagating bits"
         for i in xrange(len(self.bits)):
             self.bits[i].propagate()
     
@@ -892,8 +909,11 @@ class SW_LDPC(object):
         
     #Iterate decoding
     def iterate(self):
+        print "Calling bit propagation"
         self.propagateBits()
+        print "Calling check propagation"
         self.propagateChecks()
+        print "Calling sequence guess"
         self.guessSequence()
         self.iteration += 1
         self.errorIntegral += self.sequenceFailedParities
@@ -906,8 +926,9 @@ class SW_LDPC(object):
     def decode(self,iterations = 50,frozenFor=10):
         #Set the finishing iteration
         iterations = self.iteration+iterations
-        
+        print "Will be iterating in main SW_LDPC class"
         #Iterate until there is either 0 error, or iterations expires
+        print "failed parities",self.sequenceFailedParities
         while (self.sequenceFailedParities > 0 and self.iteration < iterations):
             self.iterate()
             #Allow ending if the algorithm got stuck at a value
