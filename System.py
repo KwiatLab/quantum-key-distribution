@@ -346,7 +346,7 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 70
+    data_factor = 80
     optimal_frame_size = 256
     factor = 1  
     
@@ -523,12 +523,14 @@ if __name__ == '__main__':
     bob_thread.parity_matrix = alice_thread.parity_matrix
 #==================================================================
     print "Will be trying to decode and correct the string"
+    print alice_thread.non_zero_positions[where(alice_thread.non_zero_positions != bob_thread.non_zero_positions)]
+
     bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
     print "Secret key matches: ", (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions))
     
     print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
     print "MBit/s", (((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions))/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
-    
+    print alice.threda.non_zero_positions(where(alice_thread.non_zero_positions != bob_thread.non_zero_positions))
     if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
         print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_thread.non_zero_positions,fmt = "%2d")
