@@ -1,0 +1,1 @@
+Higher rate data, 8Mhz singles rate on average, as Pol started to die.

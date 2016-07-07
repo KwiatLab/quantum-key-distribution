@@ -151,11 +151,13 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
     save("./DarpaQKD/bobTtags.npy",timetags[in1d(channels, bob_channels)])
     
     
-def LDPC_encode(alice_thread,column_weight = 4,number_parity_edges = 6):
+def LDPC_encode(alice_thread,column_weight = 4,row_weight = 6):
     total_string_length = len(alice_thread.non_zero_positions)
     
-    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/number_parity_edges)
-    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, number_parity_edges)
+    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
+    print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
+    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+    print alice_thread.parity_matrix
 #     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
@@ -346,8 +348,8 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 80
-    optimal_frame_size = 256
+    data_factor = 1000
+    optimal_frame_size = 128
     factor = 1  
     
     
@@ -530,7 +532,7 @@ if __name__ == '__main__':
     
     print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
     print "MBit/s", (((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions))/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
-    print alice.threda.non_zero_positions(where(alice_thread.non_zero_positions != bob_thread.non_zero_positions))
+#     print alice.threda.non_zero_positions(where(alice_thread.non_zero_positions != bob_thread.non_zero_positions))
     if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
         print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_thread.non_zero_positions,fmt = "%2d")

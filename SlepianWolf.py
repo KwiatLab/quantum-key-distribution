@@ -581,12 +581,14 @@ class swnb_node(sw_mathc):
 #         print type(self),"Number of connections",len(self.connections)
         if (len(self.connections)==0):
             self.err("WARNING: Node not connected!")
+            print self.syndromeValue
         #elif (len(self.connections)<2):
         #    print "Warning: Node has <2 connections!"
         self.inputMatrix = ones((alphabet,len(self.connections)))
     
     #Recieve recieves the conditional probability of the given node according to the object
     def receive(self,obj,prob):
+#         prob[prob<=0] =1E-14
         self.inputMatrix[:,self.connections.index(obj)] = prob
 #         print "received",self.connections.index(obj),prob
     def runAlgorithm(self):
@@ -883,7 +885,9 @@ class SW_LDPC(object):
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
-        print "doesn match at",self.sequenceGuess[where(self.correctResult != self.sequenceGuess)],self.correctResult[where(self.sequenceGuess == 73)],sum(self.correctResult == 73)
+        print "doesn match at",self.sequenceGuess[where(self.correctResult != self.sequenceGuess)],self.correctResult[where(self.correctResult != self.sequenceGuess)]
+#         for i in range(self.alphabet):
+#             print sum(self.correctResult == i)
 #         print "Guessing the sequence:",self.sequenceGuess, "and actual is ", self.correctResult
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
         
