@@ -29,11 +29,11 @@ if __name__ == '__main__':
     ttag_main_data = array([])
     offset = 0
     for file in file_names:
-        if file.contains("buffer_0"):
+        if ("buffer_0") in file:
             offset = -1
-        elif file.contains("buffer_1"):
+        elif ("buffer_1") in file:
             offset = 2
-        elif file.contains("buffer_2"):
+        elif ("buffer_2") in file:
             offset = 2
         data = load(file)
         data[:,0] += offset
