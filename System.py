@@ -119,8 +119,8 @@ def make_equal_size(alice_thread,bob_thread):
 def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
-    all_ttags = load("./DarpaQKD/"+name+"TtagsBright.npy")
-    all_channels = load("./DarpaQKD/"+name+"ChannelsBright.npy")
+    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
     all_ttags = all_ttags[:len(all_ttags)/data_factor]
     all_channels = all_channels[:len(all_channels)/data_factor]
     
@@ -348,8 +348,8 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 1000
-    optimal_frame_size = 128
+    data_factor = 100
+    optimal_frame_size = 256
     factor = 1  
     
     
@@ -507,7 +507,7 @@ if __name__ == '__main__':
     
     print "FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
 #  =======================Will be announcing some part of the string==================================
-    announce_fraction = 0.3
+    announce_fraction = 1.0
     print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"
     alice_thread.received_string = bob_thread.non_zero_positions[:int(len(bob_thread.non_zero_positions)*announce_fraction)]
     bob_thread.received_string = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
