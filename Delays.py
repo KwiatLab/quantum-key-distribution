@@ -113,10 +113,10 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     print "__REMADE-->>\n",remake_coincidence_matrix(with_delays)
     
     print"----",len(bobTtags)
-    bobTtags = load("./DarpaQKD/bobCorrectedT.npy")
-    bobChannels = load("./DarpaQKD/bobCorrectedC.npy")
-    aliceTtags = load("./DarpaQKD/aliceCorrectedT.npy")
-    aliceChannels = load("./DarpaQKD/aliceCorrectedC.npy")
+#     bobTtags = load("./DarpaQKD/bobCorrectedT.npy")
+#     bobChannels = load("./DarpaQKD/bobCorrectedC.npy")
+#     aliceTtags = load("./DarpaQKD/aliceCorrectedT.npy")
+#     aliceChannels = load("./DarpaQKD/aliceCorrectedC.npy")
 
 
     a_laser_string = laser(aliceTtags[aliceChannels==3], resolution, coincidence_window_radius)
@@ -160,7 +160,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
                     resolution= 78.125e-12,
-                    coincidence_window_radius = 1500e-12,
+                    coincidence_window_radius = 100e-12,
                     delay_max = 1e-5):
     
     channels1 = [0,1,2,3]

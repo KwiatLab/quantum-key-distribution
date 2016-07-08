@@ -47,7 +47,8 @@ if __name__ == '__main__':
     
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
-    
+    chan_main_data = chan_main_data[:len(chan_main_data)/10]
+    ttag_main_data = ttag_main_data[:len(ttag_main_data)/10]
     save("./DarpaQKD/aliceChannelsBright.npy",chan_main_data[in1d(chan_main_data, alice_channels)])
     save("./DarpaQKD/aliceTtagsBright.npy",ttag_main_data[in1d(chan_main_data, alice_channels)])
     
