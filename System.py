@@ -155,9 +155,9 @@ def LDPC_encode(alice_thread,column_weight = 4,row_weight = 6):
     total_string_length = len(alice_thread.non_zero_positions)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
-    print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
+#     print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-    print alice_thread.parity_matrix
+#     print alice_thread.parity_matrix
 #     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
@@ -296,7 +296,7 @@ class PartyThread(threading.Thread):
 #             print sum(self.frame_occupancies), " == ",len(self.ttags)
 
 #             self.frame_locations = calculate_frame_locations_daniels_mapping(self.ttags, self.frame_occupancies, self.frame_size)
-            self.frame_locations = calculate_frame_locations_for_single_occ(self.ttags, self.frame_occupancies, self.frame_size)
+            (self.frame_locations, self.frame_location_channels) = calculate_frame_locations_for_single_occ(self.ttags, self.channels, self.frame_occupancies, self.frame_size)
 
 
             print "Locations",self.name,"--->\n",self.frame_locations
@@ -328,7 +328,7 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 2500e-12
+    coincidence_window_radius = 2200e-12
     delay_max = 1e-5
     sync_period = 7.8125e-9
     
@@ -349,7 +349,7 @@ if __name__ == '__main__':
     
      
     data_factor = 100
-    optimal_frame_size = 256
+    optimal_frame_size = 2048
     factor = 1  
     
     
@@ -440,12 +440,19 @@ if __name__ == '__main__':
             i+=1
         
     indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
-#     self.channels = take(self.channels,indexes_of_order)
+    bob_thread.channels = take(bob_thread.channels,indexes_of_order)
     corrected_ttags = take(corrected_ttags,indexes_of_order)    
-        
+    
+     
     bob_thread.ttags = corrected_ttags
     inter = len(intersect1d(bob_thread.ttags, alice_thread.ttags))
-    print "TOTAL COINCIDENCES AFTER",inter,"%",inter/float(len(alice_thread.ttags))
+    
+    total = 0
+    for a_ch, b_ch in zip(alice_thread.channelArray, bob_thread.channelArray): 
+        numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
+        print "Coincidencs after correction between",a_ch,"-",b_ch,numb
+        total+=numb
+    print "TOTAL COINCIDENCES AFTER",total,"%",total/float(len(alice_thread.ttags))
     
     
 #         
@@ -487,25 +494,41 @@ if __name__ == '__main__':
 # #===================DEALS WITH OCCUPANCIES == 1==================================================
     (alice_thread.frame_occupancies,bob_thread.frame_occupancies) = make_data_string_same_size(alice_thread.frame_occupancies,bob_thread.frame_occupancies)
     (alice_thread.frame_locations,bob_thread.frame_locations) = make_data_string_same_size(alice_thread.frame_locations,bob_thread.frame_locations)
+    (alice_thread.frame_location_channels,bob_thread.frame_location_channels) = make_data_string_same_size(alice_thread.frame_location_channels,bob_thread.frame_location_channels)
+
+
 #     print sum(intersect1d(alice_thread.binary_laser_string, bob_thread.binary_laser_string))
     mutual_frames_with_occupancy_one = logical_and(alice_thread.frame_occupancies==1,bob_thread.frame_occupancies==1)
+    mutual_frames_with_multiple_occ = logical_and(alice_thread.frame_occupancies > 1,bob_thread.frame_occupancies > 1)
+    
+    print "MULTI occ",sum(mutual_frames_with_multiple_occ)
     alice_non_zero_positions_in_frame = alice_thread.frame_locations[mutual_frames_with_occupancy_one]
+    alice_non_zero_positions_in_frame_channels = alice_thread.frame_location_channels[mutual_frames_with_occupancy_one]
+    
     bob_non_zero_positions_in_frame   = bob_thread.frame_locations[mutual_frames_with_occupancy_one]
+    bob_non_zero_positions_in_frame_channels = bob_thread.frame_location_channels[mutual_frames_with_occupancy_one]
     print "size of frame occ",len(alice_thread.frame_occupancies)," and mutual non zero", len(alice_non_zero_positions_in_frame)
 
-    print "Alice and Bob frame location DATA saved for LDPC procedure."
+#     print "Alice and Bob frame location DATA saved for LDPC procedure."
 # #     fmt="%i" saves signed decimal integers
-    savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME1.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
+#     savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME1.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
     alice_thread.non_zero_positions = alice_non_zero_positions_in_frame
+    alice_thread.non_zero_positions_channels = alice_non_zero_positions_in_frame_channels
+    
     bob_thread.non_zero_positions = bob_non_zero_positions_in_frame
+    bob_thread.non_zero_positions_channels = bob_non_zero_positions_in_frame_channels
     
     bob_thread.non_zero_positions -=1
     alice_thread.non_zero_positions -=1
     
     bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
+    bob_thread.non_zero_positions_channels = bob_thread.non_zero_positions_channels[:len(bob_thread.non_zero_positions_channels)/factor]
     alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
-    
+    alice_thread.non_zero_positions_channels = alice_thread.non_zero_positions_channels[:len(alice_thread.non_zero_positions_channels)/factor]
+
+
     print "FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
+    print "FRAME LOCATION CHANNELS",sum (bob_thread.non_zero_positions_channels == alice_thread.non_zero_positions_channels+4),"out of ",len(alice_thread.non_zero_positions_channels)
 #  =======================Will be announcing some part of the string==================================
     announce_fraction = 1.0
     print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"

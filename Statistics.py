@@ -199,17 +199,18 @@ def calculate_frame_locations(binary_string, frame_occupancies, frame_size):
         frame_locations[frame_number] = map_value
         # print "Final map value: ", map_value
     return frame_locations
-def calculate_frame_locations_for_single_occ(binary_string,frame_occupancies,frame_size):
+def calculate_frame_locations_for_single_occ(binary_string, channels, frame_occupancies, frame_size):
     number_of_frames = len(frame_occupancies)
     frame_locations = zeros(number_of_frames,dtype=uint32)
+    frame_locations_channels = zeros(number_of_frames, dtype = uint8)
     number_of_timetags = len(binary_string)
     frame_numbers = binary_string.copy()
     frame_numbers /= frame_size
     
     for i in xrange(number_of_timetags):
         frame_locations[frame_numbers[i]] = (binary_string[i] % frame_size)+1
-    
-    return frame_locations
+        frame_locations_channels[frame_numbers[i]] = channels[i]
+    return frame_locations,frame_locations_channels
     
 def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, frame_size):
     number_of_frames = len(frame_occupancies)
