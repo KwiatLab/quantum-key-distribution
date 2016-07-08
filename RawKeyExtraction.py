@@ -131,8 +131,8 @@ if (__name__ == '__main__'):
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels,100)
-    (bobTtags,bobChannels) = loadprep("bob",bob_channels,100)
+    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels,1000)
+    (bobTtags,bobChannels) = loadprep("bob",bob_channels,1000)
 #     print aliceTtags[-1], bobTtags[-1]
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window

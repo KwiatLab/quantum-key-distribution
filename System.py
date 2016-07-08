@@ -119,8 +119,8 @@ def make_equal_size(alice_thread,bob_thread):
 def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
-    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+    all_ttags = load("./DarpaQKD/"+name+"TtagsBright.npy")
+    all_channels = load("./DarpaQKD/"+name+"ChannelsBright.npy")
     all_ttags = all_ttags[:len(all_ttags)/data_factor]
     all_channels = all_channels[:len(all_channels)/data_factor]
     
