@@ -16,7 +16,7 @@ from ParityCheckMatrixGen import gallager_matrix
 from SlepianWolf import encode
 import timeit
 from SW_prep import randomMatrix
-
+from reedsolo import *
 
 def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_radius):
     indexes = {}
@@ -69,30 +69,7 @@ def do_correction(bob_ttag_dict, bob_dict,alice_dict, coincidence_window_radius,
                     shift = distance_away
                 elif distance_away == number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]:
                     shift = -distance_away
-#                 if alice_dict[a_key]-coincidence_window_radius > 0:
-#                     left_boundary = alice_dict[a_key]-coincidence_window_radius
-#                 else:
-#                     left_boundary = number_of_bins_in_block + (alice_dict[a_key]-coincidence_window_radius)
-#        
-#                 if alice_dict[a_key] + coincidence_window_radius <= number_of_bins_in_block:
-#                     right_boundary = alice_dict[a_key] + coincidence_window_radius
-#                 else:
-#                     right_boundary = coincidence_window_radius - (number_of_bins_in_block - alice_dict[a_key])
-#     
-# #                 print alice_dict[a_key],distance_away,left_boundary,right_boundary
-#     
-#                 if bob_dict[a_key] >= left_boundary:
-#                     shift = distance_away
-# #                 elif bob_dict[a_key] < left_boundary:
-# #                     bob_dict[a_key] = -1
-# #                     continue
-#                 elif bob_dict[a_key] <= right_boundary:
-#                     shift = -distance_away
-# #                 elif bob_dict[a_key] > right_boundary:
-# # #                     bob_dict[a_key] = -1
-# #                     continue
-# 
-#                 bob_dict[a_key] += shift
+
                 before = bob_ttag_dict[a_key] 
                 bob_ttag_dict[a_key]  += shift
                 if bob_ttag_dict[a_key] != alice_ttag_dict[a_key]:
@@ -120,7 +97,11 @@ def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsBright.npy")
+
     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsBright.npy")
+
     all_ttags = all_ttags[:len(all_ttags)/data_factor]
     all_channels = all_channels[:len(all_channels)/data_factor]
     
@@ -161,6 +142,16 @@ def LDPC_encode(alice_thread,column_weight = 4,row_weight = 6):
 #     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
+def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight = 6):
+    total_string_length = len(alice_thread.bases_string)
+    
+    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
+#     print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
+    alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+#     print alice_thread.parity_matrix
+#     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
+    alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
+    
 def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
 #   TODO chanage this to secret_key  
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
@@ -174,6 +165,31 @@ def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, fro
 #     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
     print "Will be doing decoding using belief prop system"
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
+
+def LDPC_binary_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
+#   TODO chanage this to secret_key  
+#     print alice_thread.parity_binary_matrix
+    bob_thread.sent_binary_string = bob_thread.bases_string[:len(bob_thread.received_binary_string)]
+#     print "--->",bob_thread.received_binary_string,bob_thread.sent_binary_string
+    transition_matrix = transitionMatrix_data2_python(bob_thread.received_binary_string,bob_thread.sent_binary_string, alph = 2)
+    prior_probability_matrix_binary = sequenceProbMatrix(bob_thread.received_binary_string,transition_matrix)
+#     print "SSSSS",prior_probability_matrix_binary.shape
+
+
+#     print "SHAPE",prior_probability_matrix.shape
+    print "Creating belief propagation system"
+    belief_propagation_system = SW_LDPC(bob_thread.parity_binary_matrix, bob_thread.binary_syndromes, prior_probability_matrix_binary, original=alice_thread.bases_string,decoder=decoder)
+    print "Belief propagation system is created"
+#     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
+    print "Will be doing decoding using belief prop system"
+    return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
+def prepare_bases(channels,channelArray):
+    bases = zeros(len(channels), dtype = uint8)
+    one_diagonal_basis = channelArray[2:]
+    
+    bases[in1d(channels, one_diagonal_basis)] =1
+    
+    return bases
     
 class PartyThread(threading.Thread):
     def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period,ch,data_factor):
@@ -328,9 +344,12 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
-    coincidence_window_radius = 2200e-12
+#   perfect window for bright data is 3905e-12  
+    coincidence_window_radius = 3905e-12
     delay_max = 1e-5
     sync_period = 7.8125e-9
+    announce_fraction = 1.0
+    announce_binary_fraction = 1.0
     
     D_block_size = int(coincidence_window_radius/resolution)*2+1
     padding_zeros = 0
@@ -349,7 +368,7 @@ if __name__ == '__main__':
     
      
     data_factor = 100
-    optimal_frame_size = 2048
+    optimal_frame_size = 128
     factor = 1  
     
     
@@ -509,57 +528,88 @@ if __name__ == '__main__':
     bob_non_zero_positions_in_frame_channels = bob_thread.frame_location_channels[mutual_frames_with_occupancy_one]
     print "size of frame occ",len(alice_thread.frame_occupancies)," and mutual non zero", len(alice_non_zero_positions_in_frame)
 
+    print "Now I will throw out all different-polarization coincidences"
+    
 #     print "Alice and Bob frame location DATA saved for LDPC procedure."
 # #     fmt="%i" saves signed decimal integers
 #     savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME1.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
-    alice_thread.non_zero_positions = alice_non_zero_positions_in_frame
-    alice_thread.non_zero_positions_channels = alice_non_zero_positions_in_frame_channels
     
-    bob_thread.non_zero_positions = bob_non_zero_positions_in_frame
-    bob_thread.non_zero_positions_channels = bob_non_zero_positions_in_frame_channels
+    alice_thread.bases_string = prepare_bases(alice_non_zero_positions_in_frame_channels, alice_thread.channelArray)
+    bob_thread.bases_string = prepare_bases(bob_non_zero_positions_in_frame_channels, bob_thread.channelArray)
+    mutual_bases = where(alice_thread.bases_string == bob_thread.bases_string )
+    
+    print (mutual_bases[0]),len(bob_thread.bases_string),alice_thread.bases_string, bob_thread.bases_string,alice_non_zero_positions_in_frame_channels,bob_non_zero_positions_in_frame_channels
+    print "ERROR IN BASES",1-len(mutual_bases[0])/float(len(bob_thread.bases_string))
+    
+    alice_thread.non_zero_positions = alice_non_zero_positions_in_frame[mutual_bases]
+    alice_thread.non_zero_positions_channels = alice_non_zero_positions_in_frame_channels[mutual_bases]
+    print "DOES NOT match", 1 - (len(alice_thread.non_zero_positions_channels)/float(len(alice_non_zero_positions_in_frame_channels)))
+    
+    bob_thread.non_zero_positions = bob_non_zero_positions_in_frame[mutual_bases]
+    bob_thread.non_zero_positions_channels = bob_non_zero_positions_in_frame_channels[mutual_bases]
     
     bob_thread.non_zero_positions -=1
     alice_thread.non_zero_positions -=1
-    
-    bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
-    bob_thread.non_zero_positions_channels = bob_thread.non_zero_positions_channels[:len(bob_thread.non_zero_positions_channels)/factor]
-    alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
-    alice_thread.non_zero_positions_channels = alice_thread.non_zero_positions_channels[:len(alice_thread.non_zero_positions_channels)/factor]
+#     alice_thread.bases_string -=1
+#     bob_thread.bases_string -=1
+#     
+#     bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
+#     bob_thread.non_zero_positions_channels = bob_thread.non_zero_positions_channels[:len(bob_thread.non_zero_positions_channels)/factor]
+#     alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
+#     alice_thread.non_zero_positions_channels = alice_thread.non_zero_positions_channels[:len(alice_thread.non_zero_positions_channels)/factor]
 
 
     print "FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
     print "FRAME LOCATION CHANNELS",sum (bob_thread.non_zero_positions_channels == alice_thread.non_zero_positions_channels+4),"out of ",len(alice_thread.non_zero_positions_channels)
 #  =======================Will be announcing some part of the string==================================
-    announce_fraction = 1.0
     print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"
     alice_thread.received_string = bob_thread.non_zero_positions[:int(len(bob_thread.non_zero_positions)*announce_fraction)]
     bob_thread.received_string = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
+
+    alice_thread.received_binary_string = bob_thread.bases_string[:int(len(bob_thread.bases_string)*announce_binary_fraction)]
+    bob_thread.received_binary_string = alice_thread.bases_string[:int(len(alice_thread.bases_string)*announce_binary_fraction)]
+  
+    
     print "Succesfully ANNOUNCED will release threads", sum(alice_thread.received_string == bob_thread.received_string)/float(len(alice_thread.received_string))
     main_event.clear()
     
     print "MAIN: Encoded syndromes"
     
     LDPC_encode(alice_thread)
-    print "CORRECT FRACTION",sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions)/float(len(alice_thread.non_zero_positions))
+    LDPC_binary_encode(alice_thread)
+
+    print "CORRECT FRACTION",sum(alice_thread.non_zero_positions_channels+4 == bob_thread.non_zero_positions_channels)/float(len(alice_thread.non_zero_positions_channels))
 #=============Sending syndrome values and parity check matrix?=====
     print "Sending syndrome values and parity check matrix"
     
     bob_thread.syndromes = alice_thread.syndromes
     bob_thread.parity_matrix = alice_thread.parity_matrix
+    
+    bob_thread.binary_syndromes = alice_thread.binary_syndromes
+    bob_thread.parity_binary_matrix = alice_thread.parity_binary_matrix
 #==================================================================
     print "Will be trying to decode and correct the string"
     print alice_thread.non_zero_positions[where(alice_thread.non_zero_positions != bob_thread.non_zero_positions)]
 
     bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
-    print "Secret key matches: ", (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions))
+    
+    bob_thread.bases_string = LDPC_binary_decode(bob_thread, alice_thread)
     
     print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
-    print "MBit/s", (((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions))/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    print "MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+
 #     print alice.threda.non_zero_positions(where(alice_thread.non_zero_positions != bob_thread.non_zero_positions))
     if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
         print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
-    savetxt("./Secret_keys/alice_secret_key1.txt", alice_thread.non_zero_positions,fmt = "%2d")
-    savetxt("./Secret_keys/bob_secret_key1.txt", bob_thread.non_zero_positions,fmt = "%2d")
+        
+    alice_key = append(alice_thread.bases_string, alice_thread.non_zero_positions)
+    bob_key = append(bob_thread.bases_string, bob_thread.non_zero_positions)
+    print "Secret key matches: ", (sum(alice_key == bob_key))/float(len(alice_key))
+
+    
+    
+    savetxt("./Secret_keys/alice_secret_key1.txt", alice_key,fmt = "%2d")
+    savetxt("./Secret_keys/bob_secret_key1.txt", bob_key,fmt = "%2d")
     
 #     stop = timeit.default_timer()
 #     print stop - start 

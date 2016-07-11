@@ -19,14 +19,13 @@ if __name__ == '__main__':
     frame_size = 16
     
     total_string_length = len(alice)
-    
+    print alice
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
     parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-    parity_matrix[-1,:] = [0,0,0,1,0,1,0,0,1,1,0,0,1,0,0]
 #     print parity_matrix.shape
 #     parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, 4)
 #     print parity_matrix
-    syndromes=encode(parity_matrix,alice,frame_size)
+    syndromes=encode(parity_matrix,alice,alphabet=2)
 #     print "syndromes: ", syndromes
 #  ======================================
     
@@ -36,9 +35,10 @@ if __name__ == '__main__':
     frozenFor=5
     
     set_printoptions(threshold=nan)
-    transition_matrix = transitionMatrix_data2_python(alice,bob,frame_size)
+    transition_matrix = transitionMatrix_data2_python(alice,bob,2)
     prior_probability_matrix = sequenceProbMatrix(alice,transition_matrix)
-#     print prior_probability_matrix
+#   
+    print prior_probability_matrix.shape
     print "Transition matrix\n",transition_matrix
     belief_propagation_system = SW_LDPC(parity_matrix, syndromes, prior_probability_matrix, original=alice,decoder=decoder)
      

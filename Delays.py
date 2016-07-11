@@ -160,7 +160,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
                     resolution= 78.125e-12,
-                    coincidence_window_radius = 100e-12,
+                    coincidence_window_radius = 3905e-12,
                     delay_max = 1e-5):
     
     channels1 = [0,1,2,3]

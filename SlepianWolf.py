@@ -581,7 +581,7 @@ class swnb_node(sw_mathc):
 #         print type(self),"Number of connections",len(self.connections)
         if (len(self.connections)==0):
             self.err("WARNING: Node not connected!")
-            print self.syndromeValue
+#             print self.syndromeValue
         #elif (len(self.connections)<2):
         #    print "Warning: Node has <2 connections!"
         self.inputMatrix = ones((alphabet,len(self.connections)))
@@ -634,7 +634,8 @@ class sw_node(sw_mathc):
     def runAlgorithm(self):
         #TODO: Need the correct way to do logs, and to avoid infnities that were very annoying!
 #         print "here????"
-        return None
+        return self.bitProbabilities(self.inputs,ones(self.inputs.shape[0]))
+
     
     def propagate(self):
         #Find the values to propagate
@@ -748,6 +749,12 @@ class SW_Bit(sw_node):
         self.priorProbability = priorProbability
     def runAlgorithm(self):
         return None
+#         arg = self.bitProbabilities(self.inputs,self.priorProbability)
+#         print "\n\t Normalization Argument:\n",arg
+#         return_value = self.normalizecol(arg)
+# #         print"\n\t After (Normalized) Argument\n",return_value 
+# 
+#         return return_value
     def getValue(self):
         return 0
         
@@ -755,7 +762,7 @@ class SW_Bit(sw_node):
         
 class SW_Check(sw_node):
     def __init__(self,syndrome):
-        super(SW_nbCheck,self).__init__()
+        super(SW_Check,self).__init__()
         self.syndromeValue = syndrome
     def runAlgorithm(self):
         return self.parityProbabilities(self.inputMatrix,self.syndromeValue)
@@ -845,7 +852,8 @@ class SW_LDPC(object):
         self.checks = [None]*number_of_parity_check_eqns
         
         #Create all of the objects
-        for i in xrange(number_of_bits):
+        for i in range(number_of_bits):
+#             print i,"->",prior_probability_matrix[:,i]
             self.bits[i] = self.bitClass(prior_probability_matrix[:,i])
         for i in xrange(number_of_parity_check_eqns):
             self.checks[i] = self.checkClass(self.syndromeValues[i])

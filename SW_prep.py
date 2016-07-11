@@ -105,6 +105,7 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
     i = 0
     while i <datalen:
 #         print mat1[i]," - ",mat2[i]
+#         print (mat2[i])
         rmat[int(mat2[i])][int(mat1[i])]+=1
         i+=1
 #     print rmat
