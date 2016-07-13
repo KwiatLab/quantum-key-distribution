@@ -53,10 +53,10 @@ if __name__ == '__main__':
         ttag_main_data = ttag_main_data[:len(ttag_main_data)/100]
     
         save("./DarpaQKD/aliceChannelsBrightAttempt"+str(i)+".npy",chan_main_data[in1d(chan_main_data, alice_channels)])
-        save("./DarpaQKD/aliceTtagsBright"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, alice_channels)])
+        save("./DarpaQKD/aliceTtagsBrightAttempt"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, alice_channels)])
         
-        save("./DarpaQKD/bobChannelsBright"+str(i)+".npy",chan_main_data[in1d(chan_main_data, bob_channels)])
-        save("./DarpaQKD/bobTtagsBright"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, bob_channels)])
+        save("./DarpaQKD/bobChannelsBrightAttempt"+str(i)+".npy",chan_main_data[in1d(chan_main_data, bob_channels)])
+        save("./DarpaQKD/bobTtagsBrightAttempt"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, bob_channels)])
     
     
     

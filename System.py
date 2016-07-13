@@ -1,33 +1,26 @@
 '''
 Created on Jun 4, 2016
 
-@author: laurynas
+@author: Laurynas Tamulevicius
 '''
-import sys
 import threading
-import json
-import warnings
+from warnings import warn
 from os import system
-import DataProcessing
 from numpy import *
 from PrivacyAmplification import privacy_amplification
-import ttag
-from multiprocessing import *
 from Statistics import *
 from ParityCheckMatrixGen import gallager_matrix
 from SlepianWolf import encode
 import timeit
 from SW_prep import randomMatrix
-from reedsolo import *
 
 def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_radius):
+    
     indexes = {}
     timetags = timetags.astype(uint64)
-    
     sync_block_size = int(sync_period/resolution)
     D_block_size = coincidence_window_radius*2+1
 
-    print "DBLOCKSIZE",D_block_size
     for i in range(len(timetags)):
         ith = (timetags[i] % sync_block_size) % D_block_size
         indexes[int(timetags[i]/sync_block_size)] = ith
@@ -35,9 +28,9 @@ def get_timetag_corrections(timetags,resolution,sync_period,coincidence_window_r
     return indexes
 
 def get_pol_corrections(polarizations,timetags,resolution,sync_period,coincidence_window_radius):
+    
     indexes = {}
     timetags = timetags.astype(uint64)
-    
     sync_block_size = int(sync_period/resolution)
     
     for i in range(len(timetags)):
@@ -46,20 +39,20 @@ def get_pol_corrections(polarizations,timetags,resolution,sync_period,coincidenc
     return indexes
 
 def full_timetags_correction(bob_ttags,sync_period,resolution,coincidence_window_radius):
+    
     bob_ttag_dict = {}
     sync_block_size = int(sync_period/resolution)
-    D_block_size = coincidence_window_radius*2+1
     
     for i in range(len(bob_ttags)):
         ith = (bob_ttags[i] % sync_block_size)
         bob_ttag_dict[int(bob_ttags[i]/sync_block_size)] = ith
+        
     return bob_ttag_dict
 
 def do_correction(bob_ttag_dict, bob_pol_dict, bob_dict,alice_dict, coincidence_window_radius,alice_ttag_dict = None):
+    
     number_of_bins_in_block = coincidence_window_radius*2+1
     number_of_bins_in_block_padding = number_of_bins_in_block
-    corrected_string = array([])
-    info = array([])
     coincidence_ttag_pulses = {}
     coincidence_pol_pulses = {}
     
@@ -71,12 +64,12 @@ def do_correction(bob_ttag_dict, bob_pol_dict, bob_dict,alice_dict, coincidence_
     for a_key in alice_dict.keys():
         shift = 0
         if bob_dict.has_key(a_key):
-            distance_away = min(abs(number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key]), abs(alice_dict[a_key] - bob_dict[a_key]), abs(number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]))
-            if a_key == 4171:
-                print "%%%",number_of_bins_in_block,alice_dict[a_key],bob_dict[a_key]
-#             print "\t",number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key], abs(alice_dict[a_key] - bob_dict[a_key]), number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]
+            
+            distance_away = min(abs(number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key]),
+                                abs(alice_dict[a_key] - bob_dict[a_key]),
+                                abs(number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]))
+            
             if distance_away <= coincidence_window_radius:
-#                 print alice_dict[a_key],bob_dict[a_key]
                 if distance_away == abs(alice_dict[a_key] - bob_dict[a_key]):
                     if alice_dict[a_key] - bob_dict[a_key] > 0:
                         shift = distance_away
@@ -87,42 +80,38 @@ def do_correction(bob_ttag_dict, bob_pol_dict, bob_dict,alice_dict, coincidence_
                 elif distance_away == number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]:
                     shift = -distance_away
 
-                before = bob_ttag_dict[a_key] 
                 bob_ttag_dict[a_key]  += shift
-                if bob_ttag_dict[a_key] != alice_ttag_dict[a_key]:
-                    info_el = str(int(str(a_key))*(10**padding_zeros) + int(float(str(alice_ttag_dict[a_key])))).ljust(12)+("("+str(int(str(a_key))*(10**padding_zeros)+ int(float(str(alice_dict[a_key]))))+")").ljust(13)+"  "+str(int(str(a_key))*(10**padding_zeros) + int(float(str(before)))).ljust(12)+("("+str(int(str(a_key))*(10**padding_zeros) + int(float(str(bob_dict[a_key]))))+")").ljust(15)+"  "+str(shift).ljust(6)+"  "+str(int(str(a_key))*(10**padding_zeros) + int(float(str(bob_ttag_dict[a_key])))).ljust(12)
-#                     print info_el
-                    info = append(info,info_el)
-#                     print "-",info
                 coincidence_ttag_pulses[a_key] = bob_ttag_dict[a_key]
                 coincidence_pol_pulses[a_key] = bob_pol_dict[a_key]
-#                 print "##",a_key,bob_ttag_dict[a_key]  
             else:
                 bob_ttag_dict[a_key] = -1
-    print "-----------------------------------------------"
-    savetxt("./DarpaQKD/info.npy",info,fmt='%76s')            
+                
     return (bob_ttag_dict,coincidence_ttag_pulses,coincidence_pol_pulses)
      
-def make_equal_size(alice_thread,bob_thread):
+def make_equal_size(alice_thread, bob_thread):
 
     if (len(alice_thread.ttags) > len(bob_thread.ttags)):
-        alice_thread.ttags = alice_thread.ttags[:bob_thread.ttags]
+        alice_thread.ttags    = alice_thread.ttags[:len(bob_thread.ttags)]
         alice_thread.channels = alice_thread.channels[:len(bob_thread.channels)]
     else:
         bob_thread.ttags    = bob_thread.ttags[:len(alice_thread.ttags)]
         bob_thread.channels = bob_thread.channels[:len(alice_thread.channels)]
         
-# Dataset is now 10 smaller than all set (i.e. it's about 0.9s )
+# When data_factor is set to 10 dataset is smaller than all set (i.e. it's about 0.9s of total time)
 def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
-#     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-    all_ttags = load("./DarpaQKD/"+name+"TtagsBright.npy")
+    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt2.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt3.npy")
 
-#     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-    all_channels = load("./DarpaQKD/"+name+"ChannelsBright.npy")
+    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt2.npy")
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt3.npy")
 
-    all_ttags = all_ttags[:len(all_ttags)/data_factor]
+    all_ttags    = all_ttags[:len(all_ttags)/data_factor]
     all_channels = all_channels[:len(all_channels)/data_factor]
     
     ttags = array([])
@@ -156,68 +145,65 @@ def LDPC_encode(alice_thread,column_weight = 4,row_weight = 6):
     total_string_length = len(alice_thread.non_zero_positions)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
-#     print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
+    
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-#     print alice_thread.parity_matrix
 #     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
+
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
 def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =5):
     total_string_length = len(alice_thread.bases_string)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight) 
-#     print "#parity eqns, total_length, column weight, row_wight",number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight
     alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-#     print alice_thread.parity_matrix
-#     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
+#     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, 100, 4)
+
     alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
     
 def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
-#   TODO chanage this to secret_key  
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
     transition_matrix = transitionMatrix_data2_python(bob_thread.received_string,bob_thread.sent_string,bob_thread.frame_size)
     prior_probability_matrix = sequenceProbMatrix(alice_thread.non_zero_positions,transition_matrix)
-#     print "SHAPE",prior_probability_matrix.shape
-    print "Creating belief propagation system"
+    
+    print "Creating belief propagation system\n"
     belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.non_zero_positions,decoder=decoder)
-    print "Belief propagation system is created"
-#     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
-    print "Will be doing decoding using belief prop system"
+    
+    print "Belief propagation system is created\n"
+    print "Will be doing decoding using belief prop system\n"
+    
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
 
 def LDPC_binary_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
-#   TODO chanage this to secret_key  
-#     print alice_thread.parity_binary_matrix
+    
     bob_thread.sent_binary_string = bob_thread.bases_string[:len(bob_thread.received_binary_string)]
-#     print "--->",bob_thread.received_binary_string,bob_thread.sent_binary_string
     transition_matrix = transitionMatrix_data2_python(bob_thread.received_binary_string,bob_thread.sent_binary_string, alph = 2)
     prior_probability_matrix_binary = sequenceProbMatrix(bob_thread.received_binary_string,transition_matrix)
-#     print "SSSSS",prior_probability_matrix_binary.shape
 
-
-#     print "SHAPE",prior_probability_matrix.shape
-    print "Creating belief propagation system"
+    print "Creating binary belief propagation system\n"
     belief_propagation_system = SW_LDPC(bob_thread.parity_binary_matrix, bob_thread.binary_syndromes, prior_probability_matrix_binary, original=alice_thread.bases_string,decoder=decoder)
-    print "Belief propagation system is created"
-#     print bob_thread.parity_matrix,bob_thread.syndromes,prior_probability_matrix
-    print "Will be doing decoding using belief prop system"
+    
+    print "Binary belief propagation system is created\n"
+    print "Will be doing decoding using binary belief prop system\n"
+    
     return belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
 
 def prepare_bases(channels,channelArray):
+    
     bases = zeros(len(channels), dtype = uint8)
     one_diagonal_basis = channelArray[2:]
     
-    bases[in1d(channels, one_diagonal_basis)] =1
+    bases[in1d(channels, one_diagonal_basis)] = 1
     
     return bases    
 
+
 class PartyThread(threading.Thread):
-    def __init__(self, resolution,name,channelArray, coincidence_window_radius,delay_max,sync_period,ch,data_factor):
+    
+    def __init__(self, resolution, name, channelArray, coincidence_window_radius, delay_max, sync_period, data_factor):
         threading.Thread.__init__(self)
         self.running = True
         self.name = name
-        self.ch = ch
         self.data_factor = data_factor
         self.resolution = resolution
         self.channelArray = channelArray
@@ -231,25 +217,32 @@ class PartyThread(threading.Thread):
         self.full_dict = array([])
         self.corrected_dict = array([])
         self.corrected_pol_dict = array([])
+        
     def do_clear(self):
         self.event.clear()
+        
     def do_set(self):
         self.event.set()
+        
     def run(self):
+        
         while self.running:
             
 #             print self.name.upper()+" : Reading.csv files and converting to .npy\n"
 #             system("python ./DataProcessing.py "+self.raw_file_name+" "+self.name)
 
-            print self.name.upper()+": Loading .npy data"
+            print self.name.upper()+": Loading .npy data\n"
             (self.ttags,self.channels) = loadprep(self.name, self.channelArray, data_factor)
-            print "Loading delays"
-            print "TIME: ", self.ttags[-1]*self.resolution," in seconds"
+            
+            print "TOTAL TIME: ", self.ttags[-1]*self.resolution," in seconds"
+            
+            print self.name.upper()+": Loading delays\n"
             self.delays = load("./resultsLaurynas/Delays/delays.npy")
             print self.delays
             
+            print self.name.upper()+": Applying Delays"
+
             self.ttags=self.ttags.astype(int64)
-            print "Applying Delays"
 
             for delay,ch1 in zip(self.delays,self.channelArray):
                 if delay < 0 and self.name == "bob":
@@ -262,76 +255,65 @@ class PartyThread(threading.Thread):
             indexes_of_order = self.ttags.argsort(kind = "quicksort")
             self.channels = take(self.channels,indexes_of_order)
             self.ttags = take(self.ttags,indexes_of_order)
-#             print "INIT",self.channels[where(self.ttags == 417171)
             
             self.ttags = self.ttags.astype(uint64)
             self.channels = self.channels.astype(uint8)
 
             
-            print self.name.upper() +" FINISHED with data. Will notify main.\n"        
+            print self.name.upper() +": FINISHED with data. Will notify main\n"        
 
 
-            print self.name.upper()+": Waiting for OPTIMAL FR SIZE" 
+            print self.name.upper()+": Waiting for OPTIMAL FR SIZE\n" 
+            
 # ==========TYPICAL BLOCK TO WAIT FOR MAIN and after RESET SELF AGAIN
             self.do_clear()
             while main_event.is_set():
                 pass
             self.race_flag = True
 # ===================================================================   
-#             print "BEFORE ", self.ttags
+
             self.correction_array = array([])
             self.pol_correction_array  = array([])
             
             for channel in self.channelArray:
-                self.correction_array = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution)))
-                self.pol_correction_array = append(self.pol_correction_array, get_pol_corrections(self.channels[self.channels == channel],self.ttags[self.channels == channel], self.resolution, self.sync_period, int(self.coincidence_window_radius/self.resolution)))
+                self.correction_array     = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel],
+                                                   self.resolution, self.sync_period, 
+                                                   int(self.coincidence_window_radius/self.resolution)))
+                
+                self.pol_correction_array = append(self.pol_correction_array, get_pol_corrections(self.channels[self.channels == channel],
+                                                   self.ttags[self.channels == channel], self.resolution, self.sync_period,
+                                                   int(self.coincidence_window_radius/self.resolution)))
           
             
             if self.name == "alice":
                 bob_thread.alice_correction_array = self.correction_array
 
             for channel in self.channelArray:
-                self.full_dict = append(self.full_dict,full_timetags_correction(self.ttags[self.channels == channel], self.sync_period, self.resolution, int(self.coincidence_window_radius/self.resolution)))
+                self.full_dict = append(self.full_dict,full_timetags_correction(self.ttags[self.channels == channel],
+                                        self.sync_period, self.resolution,
+                                        int(self.coincidence_window_radius/self.resolution)))
 
-#             print self.name.upper()+": Notifying main that finished with laser strings. Will be waiting for"
             print "Correction information is caluclated and RELEASING MAIN thread to do correction"
+
 #===========READY TO ANNOUNCE======================
             self.do_clear()
-            
-            print "Done with laser string"
 
             while main_event.is_set():
                 pass
             
-            print self.name+" Calculating frame occupancies and locations:\n"
+            print self.name.upper() +": Calculating frame occupancies and locations...\n"
             self.frame_occupancies = calculate_frame_occupancy(self.ttags,self.frame_size)
-#             print sum(self.frame_occupancies), " == ",len(self.ttags)
 
 #             self.frame_locations = calculate_frame_locations_daniels_mapping(self.ttags, self.frame_occupancies, self.frame_size)
             (self.frame_locations, self.frame_location_channels) = calculate_frame_locations_for_single_occ(self.ttags, self.channels, self.frame_occupancies, self.frame_size)
-
-
-            print "Locations",self.name,"--->\n",self.frame_locations
             
             self.do_clear()
 
-                        
-
-#             
-#             print self.name.upper()+": I was released and will do error calc.\n"    
-# #             print self.received_string,self.non_zero_positions[:len(self.received_string)]
-#             self.sent_string = self.non_zero_positions[:len(self.received_string)]
-#             self.error_rate = 1-float(sum(self.received_string == self.sent_string))/len(self.received_string)
-#             print self.name.upper() + " error rate: ",self.error_rate,"\n"
-                
-            
             self.running = False
                
 if __name__ == '__main__':
 
-    
-#     alice_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_0_trimmed.csv"
-#     bob_raw_filename = "./DataFiles/ShorterFiles/06032014_maxpower_268_1_trimmed.csv"
+
     raw_file_dir = "./DarpaQKD/Alice1_Bob1.csv"
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
@@ -341,21 +323,23 @@ if __name__ == '__main__':
     
     set_printoptions(edgeitems = 20)
     resolution = 78.125e-12
+    
 #   perfect window for bright data is 3905e-12  
     coincidence_window_radius = 1500e-12
+    
     delay_max = 1e-5
     sync_period = 7.8125e-9
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
-    
     D_block_size = int(coincidence_window_radius/resolution)*2+1
+    data_factor = 1000
+    optimal_frame_size = 256
+    
     padding_zeros = 0
     while D_block_size != 0:
         D_block_size /= 10 
         padding_zeros +=1 
     
-    ch_alice = 3
-    ch_bob = 7
     
     alice_event = threading.Event()
     alice_event.set()
@@ -364,15 +348,22 @@ if __name__ == '__main__':
     bob_event.set()
     
      
-    data_factor = 200
-    optimal_frame_size = 256
-    factor = 1  
+    alice_thread = PartyThread(resolution,
+                               name = "alice",
+                               channelArray=alice_channels,
+                               coincidence_window_radius = coincidence_window_radius,
+                               delay_max = delay_max,
+                               sync_period=sync_period,
+                               data_factor = data_factor)
     
-    
-    alice_thread = PartyThread(resolution, "alice",channelArray=alice_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_alice, data_factor = data_factor)
-    bob_thread = PartyThread(resolution,"bob", channelArray=bob_channels, coincidence_window_radius = coincidence_window_radius,delay_max = delay_max,sync_period=sync_period,ch = ch_bob, data_factor = data_factor)
-    start = timeit.default_timer()  
-   
+    bob_thread = PartyThread(resolution,
+                             name = "bob",
+                             channelArray=bob_channels,
+                             coincidence_window_radius = coincidence_window_radius,
+                             delay_max = delay_max,
+                             sync_period=sync_period,
+                             data_factor = data_factor)
+       
     main_event = threading.Event()
     main_event.set()
     alice_thread.start()
@@ -381,32 +372,22 @@ if __name__ == '__main__':
     print "MAIN: will wait till AB finished loading data."
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
-#     print "BEFORE EQUAL"
-#     print alice_thread.ttags
-#     print bob_thread.ttags
-#     print "MAIN: Making datasets equal."
-#     make_equal_size(alice_thread, bob_thread)
 
     print "MAIN: STATISTICS: "
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
-    
+# ===================== OPTIMAL FRAME SIZE EXTRACTION ===================================================================
 #     
 #     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
 #     print statistics
     
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
-
+#     print "MAIN: The maximum entropy was found to be ",max_shared_binary_entropy," with frame size: ",optimal_frame_size
+# =======================================================================================================================
     alice_thread.frame_size = optimal_frame_size
     bob_thread.frame_size = optimal_frame_size
 
     print "MAIN: Optimal size calculated and set for both threads, release THEM!"
-#     alice_binary_laser_string = load("./DarpaQKD/aliceLaserString.npy")
-#     bob_binary_laser_string = load("./DarpaQKD/bobLaserString.npy")    
-#     print "-->>",alice_binary_laser_string[alice_chan == 0]
-#     print "-->>",bob_binary_laser_string[bob_chan == 4]
-#     print "coincide all",len(intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])) ,float(len(intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])))/len(alice_binary_laser_string[alice_chan == 0])
-#     print ":-: ",intersect1d(alice_binary_laser_string[alice_chan == 0], bob_binary_laser_string[bob_chan == 4])
     main_event.clear()
     alice_thread.do_set()
     bob_thread.do_set()
@@ -416,12 +397,6 @@ if __name__ == '__main__':
     main_event.set()
     
     
-    
-
-#   ================TYPICAL BLOCK TO WAIT FOR BOTH AND THEN RELEASE AND RESET FLAG AGAIN  
-# ========================================================================================
-#     print "The maximum entropy was found to be ",max_shared_binary_entropy," with frame size: ",optimal_frame_size
-#     print "Now will be framming data with size: ", optimal_frame_size
 
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
@@ -430,152 +405,119 @@ if __name__ == '__main__':
     for a_ch in alice_thread.channelArray:
         for b_ch in bob_thread.channelArray: 
             numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
-            print "Coincidencs before correction between",a_ch,"-",b_ch,numb
+#             print "Coincidencs before correction between",a_ch,"-",b_ch,numb
             total+=numb
-    print "TOTAL COINCIDENCES BEFORE",total
+    print "TOTAL COINCIDENCES BEFORE",total,"%",total/float(len(alice_thread.ttags))
     
-#     bob_thread.corrected_dict = do_correction(bob_thread.full_dict, bob_thread.binary_string_laser, alice_thread.binary_string_laser, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
     
     total_ttags = 0
-    for bob_full_dict, bob_correction, alice_correction, alice_full_dict, bob_pol_correction in zip(bob_thread.full_dict, bob_thread.correction_array, alice_thread.correction_array, alice_thread.full_dict,bob_thread.pol_correction_array):
-        correction, coincidence_ttag_pulses,coincidence_pol_pulses = do_correction(bob_full_dict,bob_pol_correction, bob_correction, alice_correction, int(bob_thread.coincidence_window_radius/bob_thread.resolution), alice_ttag_dict = alice_full_dict)
-        print "@@@@"
-        if coincidence_pol_pulses.has_key(4171):
-            print coincidence_pol_pulses[4171]
+    for bob_full_dict, bob_correction, alice_correction, alice_full_dict, bob_pol_correction in zip(bob_thread.full_dict,
+                                                                                                    bob_thread.correction_array,
+                                                                                                    alice_thread.correction_array,
+                                                                                                    alice_thread.full_dict,
+                                                                                                    bob_thread.pol_correction_array):
+
+        correction, coincidence_ttag_pulses,coincidence_pol_pulses = do_correction(bob_full_dict,
+                                                                                   bob_pol_correction,
+                                                                                   bob_correction,
+                                                                                   alice_correction, 
+                                                                                   int(bob_thread.coincidence_window_radius/bob_thread.resolution), 
+                                                                                   alice_ttag_dict = alice_full_dict)
+
         bob_thread.corrected_dict = append(bob_thread.corrected_dict, coincidence_ttag_pulses)
         bob_thread.corrected_pol_dict = append(bob_thread.corrected_pol_dict, coincidence_pol_pulses)
         
         total_ttags +=len(coincidence_ttag_pulses.keys())
-#     print "COINC PULSES",coincidence_pulses
-    A_B_channels = concatenate([alice_thread.channels,bob_thread.channels])
-    A_B_timetags = concatenate([alice_thread.ttags,bob_thread.ttags])
 
-    indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
-    A_B_channels = take(A_B_channels,indexes_of_order)
-    A_B_timetags = take(A_B_timetags,indexes_of_order)
+# ======================= FOR DEBUGGING ====================================================       
+ 
+#     A_B_channels = concatenate([alice_thread.channels,bob_thread.channels])
+#     A_B_timetags = concatenate([alice_thread.ttags,bob_thread.ttags])
+# 
+#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+#     A_B_channels = take(A_B_channels,indexes_of_order)
+#     A_B_timetags = take(A_B_timetags,indexes_of_order)
 
 #     A_B_channels.reshape(len(A_B_channels),1)
 #     A_B_timetags.reshape(len(A_B_timetags),1)
-    savetxt("./DarpaQKD/Alice1_Bob1_with_delaysBright.txt",np.c_[A_B_channels,A_B_timetags], fmt='%2s %10d')
-    print "@@@@@@@@@@@@@@@@@@@@@@@"
+#     savetxt("./DarpaQKD/Alice1_Bob1_with_delaysBright.txt",np.c_[A_B_channels,A_B_timetags], fmt='%2s %10d')
 
-#     target = open("./DarpaQKD/bobCorrectedSystem.txt", 'w')
-#     target.write(json.dumps(alice_thread.binary_string_laser))
+# ========================================================================================
     
     corrected_ttags = zeros(total_ttags, dtype = uint64)
     corrected_pol = zeros(total_ttags, dtype = uint64)
-    i=0
     sync_block_size = int(bob_thread.sync_period/bob_thread.resolution)
+    i=0
+    
     for corrected_dict,corrected_dict_pol in zip(bob_thread.corrected_dict, bob_thread.corrected_pol_dict):
         for key in corrected_dict.keys():
             corrected_ttags[i] = int(str(key))*(10**padding_zeros)+int(float(str(corrected_dict[key])))
             corrected_pol[i] = corrected_dict_pol[key]
             i+=1
             
-#     print "LEEEN",len(corrected_ttags)
     indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
     corrected_pol = take(corrected_pol,indexes_of_order)
     corrected_ttags = take(corrected_ttags,indexes_of_order)    
     
-#     save("./Debugging/aliceCh.npy",alice_thread.channels)
-#     save("./Debugging/aliceTtags.npy",alice_thread.ttags)
-# 
-#     save("./Debugging/bobCh.npy",bob_thread.channels)
-#     save("./Debugging/bobTtags.npy",bob_thread.ttags)    
-    print "FRRR",len(intersect1d(corrected_ttags, alice_thread.ttags))/float(len(corrected_ttags))
+    print "MAIN: FRACTION OF CORRECTLY CORRECTED COINCIDENCES:",len(intersect1d(corrected_ttags, alice_thread.ttags))/float(len(corrected_ttags))
+    
     bob_thread.ttags = corrected_ttags
     bob_thread.channels = corrected_pol
     
-    inter = len(intersect1d(bob_thread.ttags, alice_thread.ttags))
-    
-    save("./Debugging/aliceCh.npy",alice_thread.channels)
-    save("./Debugging/aliceTtags.npy",alice_thread.ttags)
-
-    save("./Debugging/bobCh.npy",bob_thread.channels)
-    save("./Debugging/bobTtags.npy",bob_thread.ttags)   
     
     total = 0
     for a_ch in alice_thread.channelArray:
         for b_ch in bob_thread.channelArray: 
             numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
-            print "Coincidencs after correction between",a_ch,"-",b_ch,numb
+#             print "Coincidencs after correction between",a_ch,"-",b_ch,numb
             total+=numb
     print "TOTAL COINCIDENCES AFTER",total,"%",total/float(len(alice_thread.ttags))
     
     
-#         
-#     statistics = calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, resolution)
-#     print statistics
-#     
     
     main_event.clear()
     alice_thread.do_set()
     bob_thread.do_set()
-    
-#     a_dict = alice_thread.binary_string_laser
-#     b_dict = bob_thread.binary_string_laser
-#     print "coinc window radius in bins", int(coincidence_window_radius/resolution)
-#     print "sync period size in bins ", int(sync_period/resolution)
-        
- 
-    
-    
-#     savetxt("./DarpaQKD/BOBCorrected97true.npy",corrected_ttags, fmt = "%10d")
-#     print get_coinc(alice, alice_chan, bob, bob_chan, 0, 4, int(coincidence_window_radius/resolution))
-
-#     print "->>Coincidences", len(intersect1d(bob_corrected.values(), alice))/len(bob)
-#     print bob_thread.binary_string_laser
-#     print alice_thread.binary_string_laser
-#     print "Making datasets equal..."
-
-#     while alice_thread.event.is_set() or bob_thread.event.is_set():
-#         pass
-    
-#     calculateStatistics(alice_thread.ttags,bob_thread.ttags,alice_thread.channels,bob_thread.channels, alice_thread.coincidence_window_radius,alice_thread.resolution)
-    sys.stdout.flush()
-#     
 
 
     while alice_thread.event.is_set() or bob_thread.event.is_set():
         pass
-    print "BOTH finished calculating frame occ and loc will do mutual\n"
-# #===================DEALS WITH OCCUPANCIES == 1==================================================
+    
+    print "MAIN: BOTH finished calculating frame occ and loc will do mutual frames\n"
+
+# ===================MAKES DATASETS EQUAL SIZE==================================================
+
     (alice_thread.frame_occupancies,bob_thread.frame_occupancies) = make_data_string_same_size(alice_thread.frame_occupancies,bob_thread.frame_occupancies)
     (alice_thread.frame_locations,bob_thread.frame_locations) = make_data_string_same_size(alice_thread.frame_locations,bob_thread.frame_locations)
     (alice_thread.frame_location_channels,bob_thread.frame_location_channels) = make_data_string_same_size(alice_thread.frame_location_channels,bob_thread.frame_location_channels)
+# ==============================================================================================
 
-
-#     print sum(intersect1d(alice_thread.binary_laser_string, bob_thread.binary_laser_string))
-    mutual_frames_with_occupancy_one = logical_and(alice_thread.frame_occupancies==1,bob_thread.frame_occupancies==1)
-    mutual_frames_with_multiple_occ = logical_and(alice_thread.frame_occupancies > 1,bob_thread.frame_occupancies > 1)
+    mutual_frames_with_occupancy_one = logical_and(alice_thread.frame_occupancies == 1,bob_thread.frame_occupancies == 1)
+    mutual_frames_with_multiple_occ  = logical_and(alice_thread.frame_occupancies > 1,bob_thread.frame_occupancies > 1)
     
-    print "MULTI occ",sum(mutual_frames_with_multiple_occ)
+    print "MAIN: FRACTION OF FRAMES WITH MULTIPLE OCCUPANCY: ",sum(mutual_frames_with_multiple_occ)/float(len(alice_thread.frame_occupancies))
     alice_non_zero_positions_in_frame = alice_thread.frame_locations[mutual_frames_with_occupancy_one]
     alice_non_zero_positions_in_frame_channels = alice_thread.frame_location_channels[mutual_frames_with_occupancy_one]
     
     bob_non_zero_positions_in_frame   = bob_thread.frame_locations[mutual_frames_with_occupancy_one]
     bob_non_zero_positions_in_frame_channels = bob_thread.frame_location_channels[mutual_frames_with_occupancy_one]
-    print "size of frame occ",len(alice_thread.frame_occupancies)," and mutual non zero", len(alice_non_zero_positions_in_frame)
-
-    print "Now I will throw out all different-polarization coincidences"
     
-#     print "Alice and Bob frame location DATA saved for LDPC procedure."
-# #     fmt="%i" saves signed decimal integers
-#     savetxt("./resultsLaurynas/ALICE_BOB_NON_ZERO_POSITIONS_IN_FRAME1.csv",(alice_non_zero_positions_in_frame,bob_non_zero_positions_in_frame),fmt="%i")
+    print "MAIN: Total number of frames ",len(alice_thread.frame_occupancies)," where mutual non zero frames ", len(alice_non_zero_positions_in_frame)
     
+       
     alice_thread.bases_string = prepare_bases(alice_non_zero_positions_in_frame_channels, alice_thread.channelArray)
     bob_thread.bases_string = prepare_bases(bob_non_zero_positions_in_frame_channels, bob_thread.channelArray)
     mutual_bases = where(alice_thread.bases_string == bob_thread.bases_string )
     
-#     print (mutual_bases[0]),len(bob_thread.bases_string),alice_thread.bases_string, bob_thread.bases_string,alice_non_zero_positions_in_frame_channels,bob_non_zero_positions_in_frame_channels
-    
     QBER = 1-len(mutual_bases[0])/float(len(bob_thread.bases_string))
     print "ERROR IN BASES (QBER)",QBER
     
-    if QBER*100 >21:
-        warnings.warn("The QBER is greater than 21%!!!!!")
+    if QBER*100 > 21:
+        warn("The QBER is greater than 21%!!!!!")
 
-    
+
+    print "MAIN: Now I will throw out all different-polarization coincidences\n"
+
     alice_thread.non_zero_positions = alice_non_zero_positions_in_frame[mutual_bases]
     alice_thread.non_zero_positions_channels = alice_non_zero_positions_in_frame_channels[mutual_bases]
         
@@ -584,35 +526,27 @@ if __name__ == '__main__':
     
     bob_thread.non_zero_positions -=1
     alice_thread.non_zero_positions -=1
-#     alice_thread.bases_string -=1
-#     bob_thread.bases_string -=1
-#     
-#     bob_thread.non_zero_positions = bob_thread.non_zero_positions[:len(bob_thread.non_zero_positions)/factor]
-#     bob_thread.non_zero_positions_channels = bob_thread.non_zero_positions_channels[:len(bob_thread.non_zero_positions_channels)/factor]
-#     alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/factor]
-#     alice_thread.non_zero_positions_channels = alice_thread.non_zero_positions_channels[:len(alice_thread.non_zero_positions_channels)/factor]
 
+    print "MAIN: MUTUAL FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
+    print "MAIN: MUTUAL FRAME LOCATION CHANNELS", sum(bob_thread.non_zero_positions_channels == alice_thread.non_zero_positions_channels + 4),"out of ",len(alice_thread.non_zero_positions_channels)
 
-    print "FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
-    print "FRAME LOCATION CHANNELS",sum (bob_thread.non_zero_positions_channels == alice_thread.non_zero_positions_channels+4),"out of ",len(alice_thread.non_zero_positions_channels)
 #  =======================Will be announcing some part of the string==================================
-    print "Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings"
+    print "MAIN: Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings\n"
     alice_thread.received_string = bob_thread.non_zero_positions[:int(len(bob_thread.non_zero_positions)*announce_fraction)]
-    bob_thread.received_string = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
+    bob_thread.received_string   = alice_thread.non_zero_positions[:int(len(alice_thread.non_zero_positions)*announce_fraction)]
 
     alice_thread.received_binary_string = bob_thread.bases_string[:int(len(bob_thread.bases_string)*announce_binary_fraction)]
-    bob_thread.received_binary_string = alice_thread.bases_string[:int(len(alice_thread.bases_string)*announce_binary_fraction)]
+    bob_thread.received_binary_string   = alice_thread.bases_string[:int(len(alice_thread.bases_string)*announce_binary_fraction)]
   
     
-    print "Succesfully ANNOUNCED will release threads", sum(alice_thread.received_string == bob_thread.received_string)/float(len(alice_thread.received_string))
+    print "MAIN: SUCCESFULLY ANNOUNCED WILL RELEASE THREADS\n"
     main_event.clear()
     
-    print "MAIN: Encoded syndromes"
+    print "MAIN: LDPC: Encoding both NON-BINARY AND BINARY "
     
     LDPC_encode(alice_thread)
     LDPC_binary_encode(alice_thread)
 
-    print "CORRECT FRACTION",sum(alice_thread.non_zero_positions_channels+4 == bob_thread.non_zero_positions_channels)/float(len(alice_thread.non_zero_positions_channels))
 #=============Sending syndrome values and parity check matrix?=====
     print "Sending syndrome values and parity check matrix"
     
