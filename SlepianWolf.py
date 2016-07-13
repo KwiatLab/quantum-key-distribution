@@ -893,7 +893,7 @@ class SW_LDPC(object):
     def guessSequence(self):
         for i in xrange(len(self.bits)):
             self.sequenceGuess[i] = self.bits[i].getValue()
-        print "doesn match at",self.sequenceGuess[where(self.correctResult != self.sequenceGuess)],self.correctResult[where(self.correctResult != self.sequenceGuess)]
+#         print "doesn match at",self.sequenceGuess[where(self.correctResult != self.sequenceGuess)],self.correctResult[where(self.correctResult != self.sequenceGuess)]
 #         for i in range(self.alphabet):
 #             print sum(self.correctResult == i)
 #         print "Guessing the sequence:",self.sequenceGuess, "and actual is ", self.correctResult

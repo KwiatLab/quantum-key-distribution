@@ -4,7 +4,7 @@ Created on Jun 8, 2016
 @author: laurynas
 '''
 from numpy import concatenate,take,uint64,save, int64,zeros,where,argwhere,intersect1d,load,array,append,\
-    savetxt
+    savetxt,in1d
 import sys
 import graphs
 import ttag
@@ -19,7 +19,7 @@ def remake_coincidence_matrix(coincidence_matrix):
     
     for i in range(height):
         for j in range(width):
-            matrix[i][j] = coincidence_matrix[j][channels/2+i]
+            matrix[i][j] = coincidence_matrix[i][channels/2+j]
     return matrix
 
 def get_coinc(alice_timetags,alice_channels,bob_timetags,bob_channels,ch1,ch2,window_radius):
@@ -35,7 +35,12 @@ def get_coinc(alice_timetags,alice_channels,bob_timetags,bob_channels,ch1,ch2,wi
 def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max):
 #     print "TIMETAGS BEFORE DELAYS:", A_B_timetags,A_B_channels
     print("- Applying Delays")
-    
+#     save("./Debugging/aliceChD.npy",A_B_channels[in1d(A_B_channels,channels1)])
+#     save("./Debugging/aliceTtagsD.npy",A_B_timetags[in1d(A_B_channels,channels1)])
+#     
+#     save("./Debugging/bobChD.npy",A_B_channels[in1d(A_B_channels,channels2)])
+#     save("./Debugging/bobTtagsD.npy",A_B_timetags[in1d(A_B_channels,channels2)])
+#     
     for delay,ch1,ch2 in zip(delays,channels1,channels2):
         if delay < 0:
             print "abs-->>",(abs(delay)).astype(int)
@@ -48,6 +53,8 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     A_B_channels = take(A_B_channels,indexes_of_order)
     A_B_timetags = take(A_B_timetags,indexes_of_order)      
 #     print "SORTED TTAGS: ", A_B_timetags,A_B_channels
+
+
     buf_num = ttag.getfreebuffer() 
     buffer = ttag.TTBuffer(buf_num,create=True,datapoints = int(5e7))
     buffer.resolution = 78.125e-12
@@ -107,10 +114,33 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     bufDelays.resolution = resolution
     bufDelays.channels = max(A_B_channels)+1
     bufDelays.addarray(A_B_channels,A_B_timetags.astype(uint64))
+     
+    
+    
     print bufDelays.singles((A_B_timetags[-1]-1)*bufDelays.resolution)
     with_delays = (bufDelays.coincidences((A_B_timetags[-1]-1)*bufDelays.resolution, coincidence_window_radius))
     print "__WITH_DELAYS-->\n",with_delays
-    print "__REMADE-->>\n",remake_coincidence_matrix(with_delays)
+    remade = remake_coincidence_matrix(with_delays)
+    
+    
+    
+    print "__REMADE-->>\n",remade
+    remade1 = array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1])/sum(sum(remade)), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])/sum(sum(remade))],
+                      [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1])/sum(sum(remade)), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])/sum(sum(remade))]
+                  ])
+    
+    print array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1]), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])],
+                  [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1]), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])]
+              ])
+    print "__CONTRIBUTION-->>\n", remade1
+    
+    save("./Debugging/aliceChD.npy",A_B_channels[in1d(A_B_channels,channels1)])
+    save("./Debugging/aliceTtagsD.npy",A_B_timetags[in1d(A_B_channels,channels1)])
+     
+    save("./Debugging/bobChD.npy",A_B_channels[in1d(A_B_channels,channels2)])
+    save("./Debugging/bobTtagsD.npy",A_B_timetags[in1d(A_B_channels,channels2)])
+
+    
     
     print"----",len(bobTtags)
 #     bobTtags = load("./DarpaQKD/bobCorrectedT.npy")
@@ -160,7 +190,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
                     resolution= 78.125e-12,
-                    coincidence_window_radius = 3905e-12,
+                    coincidence_window_radius = 1500e-12,
                     delay_max = 1e-5):
     
     channels1 = [0,1,2,3]
@@ -184,7 +214,16 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
 #     print A_B_channels[-20:],A_B_timetags[-20:]
     coincidences_before = (bufN.coincidences((A_B_timetags[-1]-1)*bufN.resolution, coincidence_window_radius))
     print "__BEFORE DELAYS-->\n",coincidences_before
-    print "__REMADE-->>\n",remake_coincidence_matrix(coincidences_before)
+    remade = remake_coincidence_matrix(coincidences_before)
+    print "__REMADE-->>\n",remade
+    remade1 = array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1])/sum(sum(remade)), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])/sum(sum(remade))],
+                      [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1])/sum(sum(remade)), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])/sum(sum(remade))]
+                  ])
+    
+    print array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1]), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])],
+                  [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1]), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])]
+              ])
+    print "__CONTRIBUTION-->>\n", remade1
     
     
     
