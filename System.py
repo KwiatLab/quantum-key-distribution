@@ -101,13 +101,13 @@ def make_equal_size(alice_thread, bob_thread):
 def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
-    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+    all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt2.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt3.npy")
 
-    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
+#     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+    all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt2.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt3.npy")
 
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
-    data_factor = 1000
+    data_factor = 10
     optimal_frame_size = 256
     
     padding_zeros = 0
@@ -547,55 +547,55 @@ if __name__ == '__main__':
     LDPC_encode(alice_thread)
     LDPC_binary_encode(alice_thread)
 
-#=============Sending syndrome values and parity check matrix?=====
-    print "Sending syndrome values and parity check matrix"
+#=============Sending syndrome values and parity check matrix=====
+
+    print "MAIN: Sending syndrome values and parity check matrix\n"
     
     bob_thread.syndromes = alice_thread.syndromes
     bob_thread.parity_matrix = alice_thread.parity_matrix
     
     bob_thread.binary_syndromes = alice_thread.binary_syndromes
     bob_thread.parity_binary_matrix = alice_thread.parity_binary_matrix
+    
 #==================================================================
-    print "Will be trying to decode and correct the string"
-    print alice_thread.non_zero_positions[where(alice_thread.non_zero_positions != bob_thread.non_zero_positions)]
-    print "NON-BINARY DECODING"
-    bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
-    print "BINARY DECODING"
 
+    print "MAIN: Will be trying to decode and correct the string\n"
+
+    print "MAIN: NON-BINARY DECODING\n"
+    bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
+    
+    print "MAIN: BINARY DECODING\n"
     bob_thread.bases_string = LDPC_binary_decode(bob_thread, alice_thread)
     
-    print "Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
-    print "NON-SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    print "MAIN: Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
+    print "MAIN: NON-SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
 
-#     print alice.threda.non_zero_positions(where(alice_thread.non_zero_positions != bob_thread.non_zero_positions))
     if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
-        print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!"
+        print "COOOONGRATSSSSS!!!!!!!!!!!!!!!!!!!!!!\n"
         
     alice_key = append(alice_thread.bases_string, alice_thread.non_zero_positions)
     bob_key = append(bob_thread.bases_string, bob_thread.non_zero_positions)
-    print "Secret key matches: ", (sum(alice_key == bob_key))/float(len(alice_key))
+    
+    print "MAIN: Secret key matches:\n", (sum(alice_key == bob_key))/float(len(alice_key))
     
     eves_bits = int(QBER*len(alice_thread.bases_string)) + len(alice_thread.syndromes)
-    print "NON SECRET BITS",len(alice_key), "EVE KNOWS", eves_bits,"BITS"
-    print "PRIVACY AMPLIFICATION"
+    
+    print "MAIN: NON SECRET BITS",len(alice_key), "EVE KNOWS", eves_bits,"BITS"
+    print "MAIN: PRIVACY AMPLIFICATION\n"
     (alice_thread.seed, alice_key) = privacy_amplification(alice_key, len(alice_key) - eves_bits, alice_thread.frame_size)
+    
 #=============Exchaning seed for random hashing function=====
 
     bob_thread.seed = alice_thread.seed
     
 #============================================================
-#     print bob_key
+
     bob_key = privacy_amplification(bob_key, len(bob_key) - eves_bits, bob_thread.frame_size, bob_thread.seed)
 
-    print "Secret key matches after PA: ", (sum(alice_key == bob_key))/float(len(alice_key))
-    print "SECRET BITS:",len(alice_key)
-    print "SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - len(alice_thread.syndromes))) + (len(alice_thread.bases_string)*int(QBER)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    print "MAIN: Secret key matches after PA: ", sum(alice_key == bob_key)/float(len(alice_key))
+    print "MAIN: SECRET BITS:", len(alice_key)
+    print "MAIN: SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - len(alice_thread.syndromes))) + (len(alice_thread.bases_string)*int(QBER)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+ 
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_key,fmt = "%2d")
     savetxt("./Secret_keys/bob_secret_key1.txt", bob_key,fmt = "%2d")
     
-#     stop = timeit.default_timer()
-#     print stop - start 
-      
-# 
-#     
-#     
