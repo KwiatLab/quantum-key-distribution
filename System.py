@@ -282,12 +282,12 @@ class PartyThread(threading.Thread):
             
             for channel in self.channelArray:
                 self.correction_array     = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel],
-                                                   self.resolution, self.sync_period, 
-                                                   int(self.coincidence_window_radius/self.resolution)))
+                                                                                                  self.resolution, self.sync_period, 
+                                                                                                  int(self.coincidence_window_radius/self.resolution)))
                 
                 self.pol_correction_array = append(self.pol_correction_array, get_pol_corrections(self.channels[self.channels == channel],
-                                                   self.ttags[self.channels == channel], self.resolution, self.sync_period,
-                                                   int(self.coincidence_window_radius/self.resolution)))
+                                                                                                  self.ttags[self.channels == channel], self.resolution, self.sync_period,
+                                                                                                  int(self.coincidence_window_radius/self.resolution)))
           
             
             if self.name == "alice":
