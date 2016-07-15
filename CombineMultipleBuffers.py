@@ -28,7 +28,7 @@ if __name__ == '__main__':
     chan_main_data = array([])
     ttag_main_data = array([])
     offset = 0
-    for i in range(1,4):
+    for i in range(1):
         for file in file_names:
             if ("_dataset_"+str(i)) in file:
                 if ("buffer_0") in file:
@@ -49,14 +49,14 @@ if __name__ == '__main__':
     
         alice_channels = [0,1,2,3]
         bob_channels =   [4,5,6,7]
-        chan_main_data = chan_main_data[:len(chan_main_data)/100]
-        ttag_main_data = ttag_main_data[:len(ttag_main_data)/100]
+        chan_main_data = chan_main_data[:len(chan_main_data)/10]
+        ttag_main_data = ttag_main_data[:len(ttag_main_data)/10]
     
-        save("./DarpaQKD/aliceChannelsBrightAttempt"+str(i)+".npy",chan_main_data[in1d(chan_main_data, alice_channels)])
-        save("./DarpaQKD/aliceTtagsBrightAttempt"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, alice_channels)])
+        save("./DarpaQKD/aliceChannelsBrightAttempt10th"+str(i)+".npy",chan_main_data[in1d(chan_main_data, alice_channels)])
+        save("./DarpaQKD/aliceTtagsBrightAttempt10th"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, alice_channels)])
         
-        save("./DarpaQKD/bobChannelsBrightAttempt"+str(i)+".npy",chan_main_data[in1d(chan_main_data, bob_channels)])
-        save("./DarpaQKD/bobTtagsBrightAttempt"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, bob_channels)])
+        save("./DarpaQKD/bobChannelsBrightAttempt10th"+str(i)+".npy",chan_main_data[in1d(chan_main_data, bob_channels)])
+        save("./DarpaQKD/bobTtagsBrightAttempt10th"+str(i)+".npy",ttag_main_data[in1d(chan_main_data, bob_channels)])
     
     
     

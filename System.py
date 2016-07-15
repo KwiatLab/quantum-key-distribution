@@ -5,6 +5,7 @@ Created on Jun 4, 2016
 '''
 import threading
 from warnings import warn
+import time
 from os import system
 from numpy import *
 from PrivacyAmplification import privacy_amplification
@@ -101,24 +102,27 @@ def make_equal_size(alice_thread, bob_thread):
 def loadprep(name,channelArray,data_factor):
 
     sys.stdout.flush()
-#     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-    all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
+    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt2.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt3.npy")
 
-#     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-    all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
+    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt2.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt3.npy")
 
     all_ttags    = all_ttags[:len(all_ttags)/data_factor]
     all_channels = all_channels[:len(all_channels)/data_factor]
     
-    ttags = array([])
-    channels = array([])
+    ttags = []
+    channels = []
     for ch in channelArray:
-        ttags = append(ttags, all_ttags[all_channels == ch])
-        channels = append(channels, all_channels[all_channels == ch])
+        ttags += all_ttags[all_channels == ch].tolist()
+        channels += all_channels[all_channels == ch].tolist()
+        
+    ttags = asarray(ttags, dtype = uint64)
+    channels = asarray(channels, dtype = uint8)
                 
     indexes_of_order = ttags.argsort(kind = "mergesort")
     channels = take(channels,indexes_of_order)
@@ -275,6 +279,7 @@ class PartyThread(threading.Thread):
             self.correction_array = array([])
             self.pol_correction_array  = array([])
             
+            
             for channel in self.channelArray:
                 self.correction_array     = append(self.correction_array, get_timetag_corrections(self.ttags[self.channels == channel],
                                                    self.resolution, self.sync_period, 
@@ -313,6 +318,8 @@ class PartyThread(threading.Thread):
                
 if __name__ == '__main__':
 
+    
+    start = time.time()
 
     raw_file_dir = "./DarpaQKD/Alice1_Bob1.csv"
     alice_channels = [0,1,2,3]
@@ -332,7 +339,7 @@ if __name__ == '__main__':
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
-    data_factor = 10
+    data_factor = 150
     optimal_frame_size = 256
     
     padding_zeros = 0
@@ -598,4 +605,7 @@ if __name__ == '__main__':
  
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_key,fmt = "%2d")
     savetxt("./Secret_keys/bob_secret_key1.txt", bob_key,fmt = "%2d")
+    
+    end = time.time()
+    print "MAIN: DUARTION",(end - start)
     

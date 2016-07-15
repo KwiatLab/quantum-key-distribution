@@ -54,10 +54,11 @@ from itertools import *
 def create_binary_string_from_laser_pulses(timetags, resolution, coincidence_window_radius):
     # change to int if possible (binsize / relative unit because laser frequency is 3.8HGz)
 #     print "timetags",timetags
+    print "number",coincidence_window_radius
     window_length_in_bins = int(coincidence_window_radius/resolution)*2
     window_radius = window_length_in_bins/2
     
-    print "length in bins", window_length_in_bins
+    print "diameter in bins", window_length_in_bins
     number_of_timetags = len(timetags)
 #     print "last 20",timetags[:-20]
     sparse_bin_string = zeros(number_of_timetags*(window_length_in_bins+1), dtype = uint64)

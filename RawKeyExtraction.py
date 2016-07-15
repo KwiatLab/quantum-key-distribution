@@ -131,8 +131,8 @@ if (__name__ == '__main__'):
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels,10)
-    (bobTtags,bobChannels) = loadprep("bob",bob_channels,10)
+    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels,100)
+    (bobTtags,bobChannels) = loadprep("bob",bob_channels,100)
 #     print aliceTtags[-1], bobTtags[-1]
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
@@ -161,7 +161,7 @@ if (__name__ == '__main__'):
     bobTtags = bobTtags[:len(bobTtags)]
     bobChannels = bobChannels[:len(bobChannels)]
     
-    for i in [1000,1100,1200,1300,1400,1500,1600,1700,2000]:
+    for i in range(1,10):
         calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64), bobChannels.astype(uint8),coincidence_window_radius = i*1E-9) 
     
 #     #------------------------------------
