@@ -28,7 +28,7 @@ if __name__ == '__main__':
     chan_main_data = array([])
     ttag_main_data = array([])
     offset = 0
-    for i in range(1):
+    for i in range(1,2):
         for file in file_names:
             if ("_dataset_"+str(i)) in file:
                 if ("buffer_0") in file:
