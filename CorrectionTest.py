@@ -3,7 +3,7 @@ Created on Jun 28, 2016
 
 @author: laurynas
 '''
-from System import get_timetag_corrections, do_correction
+from System import get_subframe_values, do_correction
 from numpy import loadtxt,zeros,sort, intersect1d,uint64,savetxt
 
 if __name__ == '__main__':
@@ -14,8 +14,8 @@ if __name__ == '__main__':
     coincidence_window_radius = 15
     
     
-    a_dict = get_timetag_corrections(alice_ttags, resolution, sync_period, coincidence_window_radius)
-    b_dict = get_timetag_corrections(bob_ttags, resolution, sync_period, coincidence_window_radius)
+    a_dict = get_subframe_values(alice_ttags, resolution, sync_period, coincidence_window_radius)
+    b_dict = get_subframe_values(bob_ttags, resolution, sync_period, coincidence_window_radius)
     print "alice ttags",alice_ttags
     print "bob ttags",bob_ttags
     print "alice dict",a_dict

@@ -17,8 +17,8 @@ import Statistics
 from Statistics import calculateStatistics
 from DataProcessing import *
 from Delays import calculate_delays
-from System import loadprep
-# def loadprep(fname):
+from System import load_data
+# def load_data(fname):
 #     # print("Loading Alice and Bob arrays")
 # 
 #     sys.stdout.flush()
@@ -30,7 +30,7 @@ from System import loadprep
 #     return (alice,bob,alice_pol,bob_pol)
 
 if (__name__ == '__main__'):
-#     loadedData = loadprep("06032014_maxpower")
+#     loadedData = load_data("06032014_maxpower")
     
     
 #     resolution = 1.5625e-10
@@ -131,8 +131,8 @@ if (__name__ == '__main__'):
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    (aliceTtags,aliceChannels) = loadprep("alice",alice_channels,100)
-    (bobTtags,bobChannels) = loadprep("bob",bob_channels,100)
+    (aliceTtags,aliceChannels) = load_data("alice",alice_channels,100)
+    (bobTtags,bobChannels) = load_data("bob",bob_channels,100)
 #     print aliceTtags[-1], bobTtags[-1]
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
