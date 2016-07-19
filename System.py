@@ -87,19 +87,21 @@ def get_full_subframe_values(bob_ttags,sync_period,resolution,coincidence_window
 def do_correction(bob_ttag_dict, bob_pol_dict, bob_dict, alice_dict, coincidence_window_radius, alice_ttag_dict = None):
     
     number_of_bins_in_block = coincidence_window_radius*2+1
+    print number_of_bins_in_block
     number_of_bins_in_block_padding = number_of_bins_in_block
     coincidence_ttag_pulses = {}
     coincidence_pol_pulses = {}
-    
+    k= 0
     padding_zeros = 0   
     while number_of_bins_in_block_padding != 0:
         number_of_bins_in_block_padding /= 10 
         padding_zeros +=1 
     
     for a_key in alice_dict.keys():
+
         shift = 0
         if bob_dict.has_key(a_key):
-            
+#             print "::$$$$",a_key,alice_full_dict[a_key],bob_full_dict[a_key]              
             distance_away = min(abs(number_of_bins_in_block-bob_dict[a_key]+alice_dict[a_key]),
                                 abs(alice_dict[a_key] - bob_dict[a_key]),
                                 abs(number_of_bins_in_block-alice_dict[a_key]+bob_dict[a_key]))
@@ -118,6 +120,8 @@ def do_correction(bob_ttag_dict, bob_pol_dict, bob_dict, alice_dict, coincidence
                 bob_ttag_dict[a_key]  += shift
                 coincidence_ttag_pulses[a_key] = bob_ttag_dict[a_key]
                 coincidence_pol_pulses[a_key] = bob_pol_dict[a_key]
+                k+=1
+#                 print k,")::$$$$",a_key,alice_full_dict[a_key],bob_ttag_dict[a_key]
             else:
                 bob_ttag_dict[a_key] = -1
                 
@@ -193,16 +197,16 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
   The PCM has dimensions of (parity check nodes (equations) x total bits to encode).
   Column weight and row weight determines the number of connections between edges of the graph
 '''    
-def LDPC_encode(alice_thread,column_weight = 2,row_weight = 100):
+def LDPC_encode(alice_thread,column_weight = 8,row_weight = 32):
     total_string_length = len(alice_thread.non_zero_positions)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
     
     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-#     alice_thread.parity_matrix = randomMatrix(total_string_length, 100, 4)
-
+    
+#     alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
-
+    print "Syndromes", alice_thread.syndromes
 '''
   The same as above just used in binary error correction (for polarization bases bits)
 '''
@@ -226,11 +230,11 @@ def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =5):
 def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
-    transition_matrix = transitionMatrix_data2_python(bob_thread.received_string,bob_thread.sent_string,bob_thread.frame_size)
-    prior_probability_matrix = sequenceProbMatrix(alice_thread.non_zero_positions,transition_matrix)
+    transition_matrix = transitionMatrix_data2_python(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
+    prior_probability_matrix = sequenceProbMatrix(bob_thread.non_zero_positions,transition_matrix)
     
     print "Creating belief propagation system\n"
-    belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix, original=alice_thread.non_zero_positions,decoder=decoder)
+    belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix,decoder=decoder,original=alice_thread.non_zero_positions)
     
     print "Belief propagation system is created\n"
     print "Will be doing decoding using belief prop system\n"
@@ -380,7 +384,7 @@ class PartyThread(threading.Thread):
                 self.full_dict = append(self.full_dict,get_full_subframe_values(self.ttags[self.channels == channel],
                                         self.sync_period, self.resolution,
                                         int(self.coincidence_window_radius/self.resolution)))
-
+#             print self.name," has timetags: ",self.ttags
             print "Correction information is calculated and RELEASING MAIN thread to do correction"
 
 #===========READY TO ANNOUNCE======================
@@ -420,12 +424,12 @@ if __name__ == '__main__':
     coincidence_window_radius = 1500e-12
     
     delay_max = 1e-5
-    sync_period = 7.8125e-9
+    sync_period = 63*260e-12
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
     data_factor = 1000
-    optimal_frame_size = 256
+    optimal_frame_size =271
     
     padding_zeros = 0
     while D_block_size != 0:
@@ -470,9 +474,8 @@ if __name__ == '__main__':
     (alice,bob,alice_chan,bob_chan) = (alice_thread.ttags, bob_thread.ttags, alice_thread.channels, bob_thread.channels)
 # ===================== OPTIMAL FRAME SIZE EXTRACTION ===================================================================
 #     
-#     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, laser_jitter, resolution)
+#     statistics = calculateStatistics(alice,bob,alice_chan,bob_chan, resolution)
 #     print statistics
-    
 #     max_shared_binary_entropy = max(statistics.values())
 #     optimal_frame_size = int(list(statistics.keys())[list(statistics.values()).index(max_shared_binary_entropy)])
 #     print "MAIN: The maximum entropy was found to be ",max_shared_binary_entropy," with frame size: ",optimal_frame_size
@@ -546,7 +549,7 @@ if __name__ == '__main__':
 #   Applies corrections (When I was testing it, it was able to recover 97% of coincidences)
     for corrected_dict,corrected_dict_pol in zip(bob_thread.corrected_dict, bob_thread.corrected_pol_dict):
         for key in corrected_dict.keys():
-            corrected_ttags[i] = int(str(key))*(10**padding_zeros)+int(float(str(corrected_dict[key])))
+            corrected_ttags[i] = int(str(key))*(sync_block_size)+int(float(str(corrected_dict[key])))
             corrected_pol[i] = corrected_dict_pol[key]
             i+=1
 
@@ -636,8 +639,8 @@ if __name__ == '__main__':
 
     alice_thread.received_binary_string = bob_thread.bases_string[:int(len(bob_thread.bases_string)*announce_binary_fraction)]
     bob_thread.received_binary_string   = alice_thread.bases_string[:int(len(alice_thread.bases_string)*announce_binary_fraction)]
-  
-    
+    print len(alice_thread.non_zero_positions),len(bob_thread.non_zero_positions)
+    print "MAIN: The error in the timing key before correcting",  sum(bob_thread.non_zero_positions != alice_thread.non_zero_positions)/len(alice_thread.non_zero_positions)
     print "MAIN: SUCCESFULLY ANNOUNCED WILL RELEASE THREADS\n"
     main_event.clear()
     

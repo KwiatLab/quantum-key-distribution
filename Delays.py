@@ -129,7 +129,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     remade1 = array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1])/sum(sum(remade)), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])/sum(sum(remade))],
                       [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1])/sum(sum(remade)), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])/sum(sum(remade))]
                   ])
-    
+    print "\t",remade[2][2],remade[3][3]
     print array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1]), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])],
                   [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1]), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])]
               ])
@@ -194,7 +194,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels,
                     resolution= 78.125e-12,
                     coincidence_window_radius = 4000-12,
-                    delay_max = 1e-2):
+                    delay_max = 1e-4):
     
     channels1 = [0,1,2,3]
     channels2 = [4,5,6,7]

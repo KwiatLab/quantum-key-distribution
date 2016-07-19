@@ -438,8 +438,9 @@ def calculateStatistics(alice,bob,alice_pol,bob_pol,resolution):
         b_entropy_b = calculate_binary_single_entropy(bob_frame_occupancies,frame_size)
         b_joint = joint_entropy(alice_frame_occupancies, bob_frame_occupancies)
         b_shared = b_entropy_a+b_entropy_a-b_joint
-        print "BINARY SINGLE ENTROPY: \n\t",b_entropy_a,"\n\t",b_entropy_b,"\n\t",b_joint,'\n\t', b_shared
-        
+#         time = frame_size*resolution
+
+        print "BINARY SINGLE ENTROPY: \n",b_entropy_a,"\n",b_entropy_b,"\n",b_joint,'\n', b_shared
         binary_entropies[str(frame_size)] = b_shared
 #         print("Calculating frame locations...")
 #         # alice_frame_locations = calculate_frame_locations(alice_binary_string_laser, alice_frame_occupancies, frame_size)

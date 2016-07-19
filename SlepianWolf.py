@@ -31,6 +31,7 @@ def encode(parityMatrix, inputbits, alphabet):
 #CHECK
 #Checks whether the given sequence satisfies the parity checks in the given matrix
 def check(parityMatrix, inputbits, alphabet, checks):
+#     print "INSW",checks,encode(parityMatrix,inputbits,alphabet) 
     return (checks==encode(parityMatrix,inputbits,alphabet))
 
 
@@ -691,7 +692,13 @@ class SW_nblogBit(swnb_node):
 
         return return_value
     def getValue(self):
-        return self.logbitValue(self.inputMatrix,self.priorProbability)
+#         print "-------------S------------"
+#         print self.inputMatrix,self.priorProbability
+#         print "-------------RES----------"
+        r = self.logbitValue(self.inputMatrix,self.priorProbability)
+#         print "Guess would be:",r
+#         print "--------------------------"
+        return r
 
 class SW_nblogCheck(swnb_node):
     def __init__(self,syndrome):
@@ -788,7 +795,7 @@ class SW_LDPC(object):
 #         print "Alphabet",self.alphabet
         self.correctResult = original
         self.verbose = verbose
-        
+        self.original = original
         #The number of iterations that were run on the data
         self.iteration = 0
         
@@ -884,8 +891,8 @@ class SW_LDPC(object):
     
     #Returns the number of errors the current sequence has compared to the known 'correct' sequence
     def distanceFromCorrect(self):
-#         if (self.correctResult==None):
-#             print "Correct result is not provided so cannot estimate error of decoded string"
+        if (self.correctResult==None):
+            print "Correct result is not provided so cannot estimate error of decoded string"
 #             return -1
         return float(self.errors(self.correctResult,self.sequenceGuess))/len(self.correctResult),self.errors(self.correctResult,self.sequenceGuess)
         
@@ -897,8 +904,9 @@ class SW_LDPC(object):
 #         for i in range(self.alphabet):
 #             print sum(self.correctResult == i)
 #         print "Guessing the sequence:",self.sequenceGuess, "and actual is ", self.correctResult
+        print "failed for real",sum(self.sequenceGuess != self.original)
         self.sequenceFailedParities = sum(check(self.parityMatrix,self.sequenceGuess,self.alphabet,self.syndromeValues)==False)
-        
+        print "failed acc to soft",self.sequenceFailedParities
     #Propagate bit values to parity check nodes
     def propagateBits(self):
         print "Will be propagating bits"
