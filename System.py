@@ -215,7 +215,7 @@ def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =5):
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight) 
     alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-#     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, 100, 4)
+#     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, row_weight)
 
     alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
 
@@ -227,7 +227,7 @@ def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =5):
   Prior probability matrix takes columns from transition matrix that are assigned to appropriate letter in Alex string
   All these vaariables are used in belief propagation system which allows convergence of some most probable value.
 '''
-def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=10):
+def LDPC_decode(bob_thread,alice_thread,decoder='log-bp-fft', iterations=70, frozenFor=5):
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
     
     transition_matrix = transitionMatrix_data2_python(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
@@ -424,12 +424,14 @@ if __name__ == '__main__':
     coincidence_window_radius = 1500e-12
     
     delay_max = 1e-5
-    sync_period = 63*260e-12
+    sync_period = 40*260e-12
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
     data_factor = 1000
     optimal_frame_size =271
+    column_weight = 5
+    row_weight = 32
     
     padding_zeros = 0
     while D_block_size != 0:
@@ -646,7 +648,7 @@ if __name__ == '__main__':
     
     print "MAIN: LDPC: Encoding both NON-BINARY AND BINARY "
     
-    LDPC_encode(alice_thread)
+    LDPC_encode(alice_thread,column_weight=column_weight, row_weight=row_weight)
     LDPC_binary_encode(alice_thread)
 
 #=============Sending syndrome values and parity check matrix=====
