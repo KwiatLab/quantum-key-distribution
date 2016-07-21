@@ -32,7 +32,7 @@ def get_coinc(alice_timetags,alice_channels,bob_timetags,bob_channels,ch1,ch2,wi
             coinc+=1
     return coinc
 
-def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max,dic,l):
+def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags, A_B_channels,channels1,channels2,delays,coincidence_window_radius,matrix_before,delay_max,dic,l,b1,b2):
 #     print "TIMETAGS BEFORE DELAYS:", A_B_timetags,A_B_channels
 #     print("- Applying Delays")
 #     save("./Debugging/aliceChD.npy",A_B_channels[in1d(A_B_channels,channels1)])
@@ -129,11 +129,13 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     remade1 = array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1])/sum(sum(remade)), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])/sum(sum(remade))],
                       [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1])/sum(sum(remade)), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])/sum(sum(remade))]
                   ])
-    dic[l]=remade[2][2]+remade[3][3]
+    print remade[2][2],remade[3][3]
+    dic[l]=(remade[2][2]+remade[3][3])-(b1+b2)
+    return dic
 #     print array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1]), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])],
 #                   [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1]), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])]
 #               ])
-#     print "========================================================================================================="
+    print "========================================================================================================="
 # 
 #     print "__CONTRIBUTION-->>\n", remade1
     
@@ -193,8 +195,8 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
     
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
                     resolution= 78.125e-12,
-                    coincidence_window_radius = 1500-12,
-                    delay_max = 1e-5):
+                    coincidence_window_radius = 1000-12,
+                    delay_max = 1e-7):
     
     channels1 = [0,1,2,3]
     channels2 = [4,5,6,7]
@@ -226,7 +228,7 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
 #     print array([  [(remade[0][0] + remade[0][1]+remade[1][0]+remade[1][1]), (remade[0][2] + remade[0][3]+remade[1][2]+remade[1][3])],
 #                   [(remade[2][0] + remade[2][1]+remade[3][0]+remade[3][1]), (remade[2][2] + remade[2][3]+remade[3][2]+remade[3][3])]
 #               ])
-#     print "",remade[2][2],remade[3][3]
+    print "",remade[2][2],remade[3][3]
 #     print "__CONTRIBUTION-->>\n", remade1
 #     
 #     
@@ -278,8 +280,9 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
 #     sys.stdout.flush()
     
 #     print "will now plotting corellations to check if it looks good."
-    check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max,dic,l)
-    print("Saving delays to file.")
+    return check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max,dic,l,remade[2][2],remade[3][3])
+#     
+#     print("Saving delays to file.")
     save("./resultsLaurynas/Delays/delays.npy",delays/bufN.resolution)
     
 

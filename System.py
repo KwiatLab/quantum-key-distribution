@@ -144,15 +144,16 @@ def make_equal_size(alice_thread, bob_thread):
 '''
 # When data_factor is set to 10 dataset is smaller than all set (i.e. it's about 0.9s of total time)
 def load_data(name,channelArray,data_factor):
-
+    laser_pulse = 260e-12
+    resolution = 78.125e-12
     sys.stdout.flush()
-    all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-#     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
+    all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt2.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt3.npy")
 
-    all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-#     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
+#     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
+    all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt2.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt3.npy")
 
@@ -171,7 +172,7 @@ def load_data(name,channelArray,data_factor):
     indexes_of_order = ttags.argsort(kind = "mergesort")
     channels = take(channels,indexes_of_order)
     ttags = take(ttags,indexes_of_order)
-    
+    ttags = (ttags*resolution/laser_pulse).astype(uint64)
     return (ttags,channels)
 
 '''
@@ -324,12 +325,15 @@ class PartyThread(threading.Thread):
             print self.name.upper()+": Loading .npy data\n"
             (self.ttags,self.channels) = load_data(self.name, self.channelArray, data_factor)
             
-            print "TOTAL TIME: ", self.ttags[-1]*self.resolution," in seconds"
+            print "TOTAL TIME: ", self.ttags[-1]*260e-12," in seconds"
             
             print self.name.upper()+": Loading delays\n"
             self.delays = load("./resultsLaurynas/Delays/delays.npy")
             print self.delays
             
+            laser_pulse = 260e-12
+            self.delays = (self.delays*resolution/laser_pulse).astype(int64)
+
             print self.name.upper()+": Applying Delays"
 
             self.ttags=self.ttags.astype(int64)
@@ -424,7 +428,7 @@ if __name__ == '__main__':
     coincidence_window_radius = 1500e-12
     
     delay_max = 1e-5
-    sync_period = 40*260e-12
+    sync_period = 63*260e-12
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
@@ -501,70 +505,70 @@ if __name__ == '__main__':
         pass
     
     total = 0
-    for a_ch in alice_thread.channelArray:
-        for b_ch in bob_thread.channelArray: 
-            numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
-#             print "Coincidences before correction between",a_ch,"-",b_ch,numb
-            total+=numb
-    print "TOTAL COINCIDENCES BEFORE",total,"%",total/float(len(alice_thread.ttags))
-    
-#   Gathers data for correction  
-    total_ttags = 0
-    for bob_full_dict, bob_correction, alice_correction, alice_full_dict, bob_pol_correction in zip(bob_thread.full_dict,
-                                                                                                    bob_thread.correction_array,
-                                                                                                    alice_thread.correction_array,
-                                                                                                    alice_thread.full_dict,
-                                                                                                    bob_thread.pol_correction_array):
-
-        correction, coincidence_ttag_pulses,coincidence_pol_pulses = do_correction(bob_full_dict,
-                                                                                   bob_pol_correction,
-                                                                                   bob_correction,
-                                                                                   alice_correction, 
-                                                                                   int(bob_thread.coincidence_window_radius/bob_thread.resolution), 
-                                                                                   alice_ttag_dict = alice_full_dict)
-
-        bob_thread.corrected_dict = append(bob_thread.corrected_dict, coincidence_ttag_pulses)
-        bob_thread.corrected_pol_dict = append(bob_thread.corrected_pol_dict, coincidence_pol_pulses)
-        
-        total_ttags +=len(coincidence_ttag_pulses.keys())
-
-# ======================= FOR DEBUGGING ====================================================       
- 
-#     A_B_channels = concatenate([alice_thread.channels,bob_thread.channels])
-#     A_B_timetags = concatenate([alice_thread.ttags,bob_thread.ttags])
+#     for a_ch in alice_thread.channelArray:
+#         for b_ch in bob_thread.channelArray: 
+#             numb = len(intersect1d(bob_thread.ttags[bob_thread.channels == b_ch], alice_thread.ttags[alice_thread.channels == a_ch]))
+# #             print "Coincidences before correction between",a_ch,"-",b_ch,numb
+#             total+=numb
+#     print "TOTAL COINCIDENCES BEFORE",total,"%",total/float(len(alice_thread.ttags))
+#     
+# #   Gathers data for correction  
+#     total_ttags = 0
+#     for bob_full_dict, bob_correction, alice_correction, alice_full_dict, bob_pol_correction in zip(bob_thread.full_dict,
+#                                                                                                     bob_thread.correction_array,
+#                                                                                                     alice_thread.correction_array,
+#                                                                                                     alice_thread.full_dict,
+#                                                                                                     bob_thread.pol_correction_array):
 # 
-#     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
-#     A_B_channels = take(A_B_channels,indexes_of_order)
-#     A_B_timetags = take(A_B_timetags,indexes_of_order)
-
-#     A_B_channels.reshape(len(A_B_channels),1)
-#     A_B_timetags.reshape(len(A_B_timetags),1)
-#     savetxt("./DarpaQKD/Alice1_Bob1_with_delaysBright.txt",np.c_[A_B_channels,A_B_timetags], fmt='%2s %10d')
-
-# ========================================================================================
-    
-    corrected_ttags = zeros(total_ttags, dtype = uint64)
-    corrected_pol = zeros(total_ttags, dtype = uint64)
-    sync_block_size = int(bob_thread.sync_period/bob_thread.resolution)
-    i=0
-    
-#   Applies corrections (When I was testing it, it was able to recover 97% of coincidences)
-    for corrected_dict,corrected_dict_pol in zip(bob_thread.corrected_dict, bob_thread.corrected_pol_dict):
-        for key in corrected_dict.keys():
-            corrected_ttags[i] = int(str(key))*(sync_block_size)+int(float(str(corrected_dict[key])))
-            corrected_pol[i] = corrected_dict_pol[key]
-            i+=1
-
-#   Sorts the data         
-    indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
-    corrected_pol = take(corrected_pol,indexes_of_order)
-    corrected_ttags = take(corrected_ttags,indexes_of_order)    
-    
-    print "MAIN: FRACTION OF CORRECTLY CORRECTED COINCIDENCES:",len(intersect1d(corrected_ttags, alice_thread.ttags))/float(len(corrected_ttags))
-    
-    bob_thread.ttags = corrected_ttags
-    bob_thread.channels = corrected_pol
-    
+#         correction, coincidence_ttag_pulses,coincidence_pol_pulses = do_correction(bob_full_dict,
+#                                                                                    bob_pol_correction,
+#                                                                                    bob_correction,
+#                                                                                    alice_correction, 
+#                                                                                    int(bob_thread.coincidence_window_radius/bob_thread.resolution), 
+#                                                                                    alice_ttag_dict = alice_full_dict)
+# 
+#         bob_thread.corrected_dict = append(bob_thread.corrected_dict, coincidence_ttag_pulses)
+#         bob_thread.corrected_pol_dict = append(bob_thread.corrected_pol_dict, coincidence_pol_pulses)
+#         
+#         total_ttags +=len(coincidence_ttag_pulses.keys())
+# 
+# # ======================= FOR DEBUGGING ====================================================       
+#  
+# #     A_B_channels = concatenate([alice_thread.channels,bob_thread.channels])
+# #     A_B_timetags = concatenate([alice_thread.ttags,bob_thread.ttags])
+# # 
+# #     indexes_of_order = A_B_timetags.argsort(kind = "mergesort")
+# #     A_B_channels = take(A_B_channels,indexes_of_order)
+# #     A_B_timetags = take(A_B_timetags,indexes_of_order)
+# 
+# #     A_B_channels.reshape(len(A_B_channels),1)
+# #     A_B_timetags.reshape(len(A_B_timetags),1)
+# #     savetxt("./DarpaQKD/Alice1_Bob1_with_delaysBright.txt",np.c_[A_B_channels,A_B_timetags], fmt='%2s %10d')
+# 
+# # ========================================================================================
+#     
+#     corrected_ttags = zeros(total_ttags, dtype = uint64)
+#     corrected_pol = zeros(total_ttags, dtype = uint64)
+#     sync_block_size = int(bob_thread.sync_period/bob_thread.resolution)
+#     i=0
+#     
+# #   Applies corrections (When I was testing it, it was able to recover 97% of coincidences)
+#     for corrected_dict,corrected_dict_pol in zip(bob_thread.corrected_dict, bob_thread.corrected_pol_dict):
+#         for key in corrected_dict.keys():
+#             corrected_ttags[i] = int(str(key))*(sync_block_size)+int(float(str(corrected_dict[key])))
+#             corrected_pol[i] = corrected_dict_pol[key]
+#             i+=1
+# 
+# #   Sorts the data         
+#     indexes_of_order = corrected_ttags.argsort(kind = "quicksort")
+#     corrected_pol = take(corrected_pol,indexes_of_order)
+#     corrected_ttags = take(corrected_ttags,indexes_of_order)    
+#     
+#     print "MAIN: FRACTION OF CORRECTLY CORRECTED COINCIDENCES:",len(intersect1d(corrected_ttags, alice_thread.ttags))/float(len(corrected_ttags))
+#     
+#     bob_thread.ttags = corrected_ttags
+#     bob_thread.channels = corrected_pol
+#     
     
     total = 0
     for a_ch in alice_thread.channelArray:
@@ -672,7 +676,7 @@ if __name__ == '__main__':
     bob_thread.bases_string = LDPC_binary_decode(bob_thread, alice_thread)
     
     print "MAIN: Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
-    print "MAIN: NON-SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    print "MAIN: NON-SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*260e-12))/1e6
 
     if (sum(alice_thread.non_zero_positions == bob_thread.non_zero_positions))/float(len(alice_thread.non_zero_positions)) == 1.0 :
         print "CONGRATULATIONS! ALEX AND BRAD TIMING STRINGS ARE MATCHING\n"
@@ -698,7 +702,7 @@ if __name__ == '__main__':
 
     print "MAIN: Secret key matches after PA: ", sum(alice_key == bob_key)/float(len(alice_key))
     print "MAIN: SECRET BITS:", len(alice_key)
-    print "MAIN: SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - len(alice_thread.syndromes))) + int(len(alice_thread.bases_string)*(1-QBER)) )/(alice_thread.ttags[-1]*alice_thread.resolution))/1e6
+    print "MAIN: SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - len(alice_thread.syndromes))) + int(len(alice_thread.bases_string)*(1-QBER)) )/(alice_thread.ttags[-1]*260e-12))/1e6
  
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_key,fmt = "%2d")
     savetxt("./Secret_keys/bob_secret_key1.txt", bob_key,fmt = "%2d")
