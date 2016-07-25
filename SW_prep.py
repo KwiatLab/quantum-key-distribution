@@ -58,7 +58,7 @@ def normalizecol(mat):
     res = array(mat.real,copy=True,dtype=float64)
     
     #Sometimes     FFT returns tiny negative value -> normalize that to 0:
-    res[res<0.00]=0.00
+    res[res<0.00]=1e-17
     
     #Sum up all the values in each column
     colsum= sum(res,0)
@@ -111,9 +111,9 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
 #     print rmat
 
 #    trying to fix 0 probability problem
-    for i in range(alph):
-        if sum(rmat[:,i]) == 0: 
-            rmat[i][i] +=1
+#     for i in range(alph):
+#         if sum(rmat[:,i]) == 0: 
+#             rmat[i][i] +=1
 #         print "Col",i,sum(rmat[:,i])
 #     for i in range(alph):
 #         for j in range(alph):

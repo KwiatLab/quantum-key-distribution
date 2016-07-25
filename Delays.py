@@ -283,4 +283,4 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
 #     return check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max,dic,l,remade[2][2],remade[3][3])
 #     
 #     print("Saving delays to file.")
-    save("./resultsLaurynas/Delays/delays2-3.npy",delays/bufN.resolution)
+    save("./resultsLaurynas/Delays/delays.npy",delays/bufN.resolution)
