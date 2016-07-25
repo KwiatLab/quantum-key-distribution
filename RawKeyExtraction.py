@@ -162,9 +162,9 @@ if (__name__ == '__main__'):
     bobChannels = bobChannels[:len(bobChannels)]
 #     730000
     dic = {}
-    for i in range(0,3000000,10):
+    for i in range(1):
         print "\t",i,"\n"
-        dic = calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64)+i, bobChannels.astype(uint8),i,dic,coincidence_window_radius = 1E-9) 
+        dic = calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64)+i, bobChannels.astype(uint8),i,dic,coincidence_window_radius = 200E-12) 
 #         print dic
     print "max",max(dic.values())
     print "max",dic.keys()[dic.values().index(max(dic.values()))]

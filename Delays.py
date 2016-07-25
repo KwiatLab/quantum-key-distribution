@@ -196,7 +196,7 @@ def check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution,
 def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
                     resolution= 260e-12,
                     coincidence_window_radius = 200-12,
-                    delay_max = 1e-7):
+                    delay_max = 1e-6):
     
     channels1 = [0,1,2,3]
     channels2 = [4,5,6,7]
@@ -280,7 +280,7 @@ def calculate_delays(aliceTtags,aliceChannels,bobTtags,bobChannels, l,dic,
 #     sys.stdout.flush()
     
 #     print "will now plotting corellations to check if it looks good."
-    return check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max,dic,l,remade[2][2],remade[3][3])
+#     return check_correlations(aliceTtags,aliceChannels,bobTtags,bobChannels,resolution, A_B_timetags.astype(uint64), A_B_channels, channels1, channels2,delays/bufN.resolution, coincidence_window_radius,coincidences_before, delay_max,dic,l,remade[2][2],remade[3][3])
 #     
 #     print("Saving delays to file.")
-    save("./resultsLaurynas/Delays/delays.npy",delays/bufN.resolution)
+    save("./resultsLaurynas/Delays/delays2-3.npy",delays/bufN.resolution)
