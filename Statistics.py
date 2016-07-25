@@ -211,6 +211,7 @@ def calculate_frame_locations_for_single_occ(binary_string, channels, frame_occu
     for i in xrange(number_of_timetags):
         frame_locations[frame_numbers[i]] = (binary_string[i] % frame_size)+1
         frame_locations_channels[frame_numbers[i]] = channels[i]
+#     print "FRAME LOCATIONS",frame_locations[where(frame_occupancies == 1)]
     return frame_locations,frame_locations_channels
     
 def calculate_frame_locations_daniels_mapping(binary_string,frame_occupancies, frame_size):

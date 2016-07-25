@@ -26,6 +26,7 @@ def encode(parityMatrix, inputbits, alphabet):
     #so all that really needs to be done is matrix multiplication: parityMatrix * inputbits
 #     print "Is true or not:",(parityMatrix.dot(inputbits)).shape, inputbits.reshape()
 #     print parityMatrix.shape,len(inputbits)
+#     print "@@@@@@@@@@@@@@@@@@@@@",inputbits
     return (parityMatrix.dot(inputbits)%alphabet).astype(uint16)
     
 #CHECK
@@ -435,6 +436,7 @@ class sw_math(object):
     
     
     def parityProbabilities(self,mat,syndromes):
+
         return self.parityProbabilities_mul(mat,syndromes)
     
     #BITPROBABILITIES
@@ -512,7 +514,6 @@ class sw_mathc(sw_math):
         return res
     
     def parityProbabilities_mul(self,mat,syndromes):
-        
         #This code fixes the fringe case of a check having either no bits or one bit
         if (mat.shape[1]==0):
             return mat
@@ -520,11 +521,12 @@ class sw_mathc(sw_math):
             res = zeros(mat.shape)
             res[syndromes,0]= 1.0
             return res        
-        
         #To do the convolutions, in order to find the probabilities given all the bits, we use
         #an FFT, which allows it to be done faster for all the bits at once
+#         print "BEFORE LOGS",self.mulcol(self.fftcol(mat))
         convresult = self.ifftcol(self.mulcol(self.fftcol(mat)))
-        
+#         print "After LOGS",convresult
+
         #Each columns in convresult is now the probability of all the other bits being each letter.
         #We now convert it to get the probability of the columns being each letter to satisfy the check
         res = roll(flipud(convresult),1+syndromes,0)
@@ -641,6 +643,7 @@ class sw_node(sw_mathc):
     def propagate(self):
         #Find the values to propagate
 #         print "Will actually do propagation in super class"
+        print "About to propagate!!!"
         vals = self.runAlgorithm()
         
         #Propagate the values to each of the associated connections
@@ -657,7 +660,7 @@ class SW_nbBit(swnb_node):
         self.priorProbability = priorProbability
     def runAlgorithm(self):
 #         print "HEEEE"
-#         print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
+#         print"\n\t BITS: Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
         arg = self.bitProbabilities(self.inputMatrix,self.priorProbability)
 #         print "\n\t Normalization Argument:\n",arg
         return_value = self.normalizecol(arg)
@@ -673,7 +676,10 @@ class SW_nbCheck(swnb_node):
         super(SW_nbCheck,self).__init__()
         self.syndromeValue = syndrome
     def runAlgorithm(self):
-        return self.parityProbabilities(self.inputMatrix,self.syndromeValue)
+#         print"\n\t CHECK: Input M and syndrome value M: \n\n",self.inputMatrix,"\n\n",self.syndromeValue
+        arg = self.parityProbabilities(self.inputMatrix,self.syndromeValue)
+#         print "RETURN OF CHECK",arg
+        return arg
 
 #The 'log-bp-fft' nonbinary decoder is made up of the next two classes
 class SW_nblogBit(swnb_node):
@@ -681,6 +687,7 @@ class SW_nblogBit(swnb_node):
         super(SW_nblogBit,self).__init__()
         self.priorProbability = log(priorProbability)
     def runAlgorithm(self):
+#         print"\n\t Input M and PRIOR M: \n\n",self.inputMatrix,"\n\n",self.priorProbability
         arg = self.logbitProbabilities(self.inputMatrix,self.priorProbability)
 #         if self.getValue() == 0:
 #             print "Computed probabilities:\n",arg

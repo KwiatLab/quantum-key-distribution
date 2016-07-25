@@ -115,10 +115,10 @@ def transitionNumbers_data2_python(mat1,mat2,alph):
         if sum(rmat[:,i]) == 0: 
             rmat[i][i] +=1
 #         print "Col",i,sum(rmat[:,i])
-    for i in range(alph):
-        for j in range(alph):
-            if rmat[i][j] == 0:
-                rmat[i][j] = 1E-17
+#     for i in range(alph):
+#         for j in range(alph):
+#             if rmat[i][j] == 0:
+#                 rmat[i][j] = 1E-17
     return rmat
     
 def transitionNumbers_data2(mat1,mat2,alph):

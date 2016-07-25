@@ -131,8 +131,8 @@ if (__name__ == '__main__'):
     alice_channels = [0,1,2,3]
     bob_channels =   [4,5,6,7]
     
-    (aliceTtags,aliceChannels) = load_data("alice",alice_channels,100)
-    (bobTtags,bobChannels) = load_data("bob",bob_channels,100)
+    (aliceTtags,aliceChannels) = load_data("alice",alice_channels,1)
+    (bobTtags,bobChannels) = load_data("bob",bob_channels,1)
 #     print aliceTtags[-1], bobTtags[-1]
     
 #      1.9e-7 biggest u can make and still get correlations this corresponds to 1458 bins in diameter of coincidence window
@@ -161,13 +161,13 @@ if (__name__ == '__main__'):
     bobTtags = bobTtags[:len(bobTtags)]
     bobChannels = bobChannels[:len(bobChannels)]
 #     730000
-    dic = {}
-    for i in range(0,300,100):
-        print "\t",i,"\n"
-        dic = calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64)+i, bobChannels.astype(uint8),i,dic,coincidence_window_radius = 1E-9) 
+#     dic = {}
+#     for i in range(0,300,100):
+#         print "\t",i,"\n"
+    calculate_delays(aliceTtags.astype(uint64), aliceChannels.astype(uint8), bobTtags.astype(uint64), bobChannels.astype(uint8)) 
 #         print dic
-    print "max",max(dic.values())
-    print "max",dic.keys()[dic.values().index(max(dic.values()))]
+#     print "max",max(dic.values())
+#     print "max",dic.keys()[dic.values().index(max(dic.values()))]
 #     #------------------------------------
 #     # print("Alice ready. Adding Alice Data to Buffer")
 #     bufAlice.addarray(aliceChannels,aliceTtags)

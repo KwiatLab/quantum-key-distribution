@@ -34,7 +34,8 @@ def gallager_matrix(number_of_parity_check_eqns,
 
 if __name__ == '__main__':
     number_of_bits = 24
-    column_weight = 4
-    row_weight = 2
+    column_weight = 2
+    row_weight = 4
+    set_printoptions(edgeitems = 100)
     number_of_parity_check_eqns = int(number_of_bits*column_weight/row_weight)
     print gallager_matrix(number_of_parity_check_eqns, number_of_bits, column_weight, row_weight)
