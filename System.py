@@ -203,30 +203,30 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
   The PCM has dimensions of (parity check nodes (equations) x total bits to encode).
   Column weight and row weight determines the number of connections between edges of the graph
 '''    
-def LDPC_encode(alice_thread,column_weight = 2,row_weight = 3):
+def LDPC_encode(alice_thread,column_weight =3,row_weight = 5):
     total_string_length = len(alice_thread.non_zero_positions)
     
-    number_of_parity_check_eqns_gallager = int(total_string_length*0.8)
+    number_of_parity_check_eqns_gallager = int(total_string_length*0.65)
     
-#     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
 #     print alice_thread.parity_matrix
 #     print "column weight of first column",sum(alice_thread.parity_matrix[:,0])
     #bits   - number of encoding strings
     #checks - number of parity check eqns
     #paritis- column weight
-    alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
+#     alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
-    print "Syndromes", alice_thread.syndromes
+    
+    print "Syndromes", alice_thread.syndromes,len(alice_thread.syndromes),(total_string_length)
 '''
   The same as above just used in binary error correction (for polarization bases bits)
 '''
-def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =8):
+def LDPC_binary_encode(alice_thread,column_weight = 3,row_weight =4):
     total_string_length = len(alice_thread.bases_string)
     
-    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight) 
+    number_of_parity_check_eqns_gallager = int(total_string_length*0.6) 
 #     alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
-
     alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
 
 
@@ -237,14 +237,14 @@ def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =8):
   Prior probability matrix takes columns from transition matrix that are assigned to appropriate letter in Alex string
   All these vaariables are used in belief propagation system which allows convergence of some most probable value.
 '''
-def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=5):
+def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=20):
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
-    
+#     transition_matrix = load("./DarpaQKD/transitionMatrix"+str(bob_thread.frame_size)+".npy")
     transition_matrix = transitionMatrix_data2_python(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
-    print "Will be saving TRANSITION matrix"
-    save("./DarpaQKD/transitionMatrix"+str(bob_thread.frame_size)+".npy",transition_matrix)
+#     print "Will be saving TRANSITION matrix"
+#     save("./DarpaQKD/transitionMatrix"+str(bob_thread.frame_size)+".npy",transition_matrix)
     prior_probability_matrix = sequenceProbMatrix(bob_thread.non_zero_positions,transition_matrix)
-    print "BINARY TRANS\n\n",transition_matrix
+    print "NON-BINARY TRANS\n\n",transition_matrix
     print "Creating belief propagation system\n"
     belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix,decoder=decoder,original=alice_thread.non_zero_positions)
     
@@ -415,7 +415,7 @@ if __name__ == '__main__':
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
-    data_factor = 1000
+    data_factor = 100000
     optimal_frame_size = 8
     column_weight = 5
     row_weight = 32
@@ -621,8 +621,8 @@ if __name__ == '__main__':
 
     print "MAIN: MUTUAL FRAME LOCATIONS: ", sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions)," out of ", len(alice_thread.non_zero_positions)," % ", float(sum(bob_thread.non_zero_positions == alice_thread.non_zero_positions))/len(alice_thread.non_zero_positions)
     print "MAIN: MUTUAL FRAME LOCATION CHANNELS", sum(bob_thread.non_zero_positions_channels == alice_thread.non_zero_positions_channels + 4),"out of ",len(alice_thread.non_zero_positions_channels)
-    print alice_thread.non_zero_positions
-    print bob_thread.non_zero_positions
+    print "LENGTH of Alice non-secret timing key",len(alice_thread.non_zero_positions)
+    print "LENGTH of Bob non-secret timing key",len(bob_thread.non_zero_positions)
 #  =======================Will be announcing some part of the string==================================
     print "MAIN: Alice and Bob are now ANNOUNCING "+str(announce_fraction)+ " of their frame position strings\n"
     alice_thread.received_string = bob_thread.non_zero_positions[:int(len(bob_thread.non_zero_positions)*announce_fraction)]
