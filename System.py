@@ -203,10 +203,10 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
   The PCM has dimensions of (parity check nodes (equations) x total bits to encode).
   Column weight and row weight determines the number of connections between edges of the graph
 '''    
-def LDPC_encode(alice_thread,column_weight = 40,row_weight = 3):
+def LDPC_encode(alice_thread,column_weight = 3,row_weight = 3):
     total_string_length = len(alice_thread.non_zero_positions)
     
-    number_of_parity_check_eqns_gallager = int(total_string_length*0.1)
+    number_of_parity_check_eqns_gallager = int(total_string_length*0.99)
     
 #     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
 #     print alice_thread.parity_matrix
@@ -220,12 +220,12 @@ def LDPC_encode(alice_thread,column_weight = 40,row_weight = 3):
 '''
   The same as above just used in binary error correction (for polarization bases bits)
 '''
-def LDPC_binary_encode(alice_thread,column_weight = 4,row_weight =5):
+def LDPC_binary_encode(alice_thread,column_weight = 3,row_weight =3):
     total_string_length = len(alice_thread.bases_string)
     
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight) 
     alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-#     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, row_weight)
+#     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
 
     alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
 
@@ -406,15 +406,15 @@ if __name__ == '__main__':
     resolution = 260e-12
     
 #   perfect window for bright data is 3905e-12  
-    coincidence_window_radius = 400-12
+    coincidence_window_radius = 200-12
     
     delay_max = 1e-5
     sync_period = 63*260e-12
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
-    data_factor = 1
-    optimal_frame_size =16
+    data_factor = 10
+    optimal_frame_size = 8
     column_weight = 5
     row_weight = 32
     
@@ -589,6 +589,12 @@ if __name__ == '__main__':
 #   Calculates binary string with bases values and find mutual bases with same values   
     alice_thread.bases_string = prepare_bases(alice_non_zero_positions_in_frame_channels, alice_thread.channelArray)
     bob_thread.bases_string = prepare_bases(bob_non_zero_positions_in_frame_channels, bob_thread.channelArray)
+    print "Bases strings"
+    print alice_non_zero_positions_in_frame_channels
+    print bob_non_zero_positions_in_frame_channels
+    print alice_thread.bases_string
+    print bob_thread.bases_string
+    
     mutual_bases = where(alice_thread.bases_string == bob_thread.bases_string )
     
 #   Estimates QBER where it is determined from non-mathcing bases  TODO: should be determined only from announced fraction
