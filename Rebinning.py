@@ -15,7 +15,6 @@ if __name__ == '__main__':
     timetags = (timetags*resolution/laser_pulse).astype(uint64)
 
     print("Saving Data Arrays")
-    sys.stdout.flush()
     
     save("./DarpaQKD/aliceChannelsREBINNEDfull.npy",channels[in1d(channels, alice_channels)])
     save("./DarpaQKD/aliceTtagsREBINNEDfull.npy",timetags[in1d(channels, alice_channels)])

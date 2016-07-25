@@ -22,12 +22,12 @@ if __name__ == '__main__':
     print alice
     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
     parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
-    parity_matrix = array([[ 1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,],
-                     [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  0,  0,  0,],
-                     [ 0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,],
-                     [ 0,  0,  1,  0,  1,  0,  1,  0,  0,  0,  1,  0,],
-                     [ 1,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  1,],
-                     [ 0,  0,  0,  1,  0,  1,  0,  0,  1,  1,  0,  0]])
+#     parity_matrix = array([[ 1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,],
+#                      [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  0,  0,  0,],
+#                      [ 0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,],
+#                      [ 0,  0,  1,  0,  1,  0,  1,  0,  0,  0,  1,  0,],
+#                      [ 1,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  1,],
+#                      [ 0,  0,  0,  1,  0,  1,  0,  0,  1,  1,  0,  0]])
     print "Parity matrix\n",parity_matrix
     print "column weight of first column",sum(parity_matrix[:,0])
 #     parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, 4)

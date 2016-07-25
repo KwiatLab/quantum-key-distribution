@@ -147,13 +147,17 @@ def load_data(name,channelArray,data_factor):
 #     laser_pulse = 260e-12
     sys.stdout.flush()
 #     all_ttags = load("./DarpaQKD/"+name+"Ttags.npy")
-    all_ttags = load("./DarpaQKD/"+name+"TtagsREBINNED.npy")
+#     all_ttags = load("./DarpaQKD/"+name+"TtagsREBINNED.npy")
+    all_ttags = load("./DarpaQKD/"+name+"TtagsREBINNEDfull.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt1.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt2.npy")
 #     all_ttags = load("./DarpaQKD/"+name+"TtagsBrightAttempt3.npy")
 
 #     all_channels = load("./DarpaQKD/"+name+"Channels.npy")
-    all_channels = load("./DarpaQKD/"+name+"ChannelsREBINNED.npy")
+
+#     all_channels = load("./DarpaQKD/"+name+"ChannelsREBINNED.npy")
+    all_channels = load("./DarpaQKD/"+name+"ChannelsREBINNEDfull.npy")
+
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt1.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt2.npy")
 #     all_channels = load("./DarpaQKD/"+name+"ChannelsBrightAttempt3.npy")
@@ -199,18 +203,18 @@ def load_save_raw_file(dir, alice_channels, bob_channels):
   The PCM has dimensions of (parity check nodes (equations) x total bits to encode).
   Column weight and row weight determines the number of connections between edges of the graph
 '''    
-def LDPC_encode(alice_thread,column_weight = 3,row_weight = 3):
+def LDPC_encode(alice_thread,column_weight = 40,row_weight = 3):
     total_string_length = len(alice_thread.non_zero_positions)
     
-    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
+    number_of_parity_check_eqns_gallager = int(total_string_length*0.1)
     
-    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+#     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
 #     print alice_thread.parity_matrix
 #     print "column weight of first column",sum(alice_thread.parity_matrix[:,0])
     #bits   - number of encoding strings
     #checks - number of parity check eqns
     #paritis- column weight
-#     alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
+    alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     print "Syndromes", alice_thread.syndromes
 '''
