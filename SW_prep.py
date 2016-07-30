@@ -58,6 +58,7 @@ def normalizecol(mat):
     res = array(mat.real,copy=True,dtype=float64)
     
     #Sometimes     FFT returns tiny negative value -> normalize that to 0:
+    
     res[res<0.00]=0.00
     
     #Sum up all the values in each column

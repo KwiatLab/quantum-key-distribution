@@ -26,7 +26,7 @@ from numpy import *
 from PrivacyAmplification import privacy_amplification
 from Statistics import *
 from ParityCheckMatrixGen import gallager_matrix
-from SlepianWolf import encode
+from SlepianWolf import encode,check
 import timeit
 from SW_prep import randomMatrix
 
@@ -208,16 +208,80 @@ def LDPC_encode(alice_thread,column_weight =3,row_weight = 5):
     
     number_of_parity_check_eqns_gallager = int(total_string_length*0.65)
     
-    alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+#     alice_thread.parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
 #     print alice_thread.parity_matrix
 #     print "column weight of first column",sum(alice_thread.parity_matrix[:,0])
     #bits   - number of encoding strings
     #checks - number of parity check eqns
     #paritis- column weight
-#     alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
+    alice_thread.parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
     alice_thread.syndromes=encode(alice_thread.parity_matrix,alice_thread.non_zero_positions,alice_thread.frame_size)
     
     print "Syndromes", alice_thread.syndromes,len(alice_thread.syndromes),(total_string_length)
+    
+def LDPC_decode_chunk(alice_thread, bob_thread, number_of_parity_check_eqns,alice_chunk, bob_chunk, attempt, decoder, iterations, frozenFor):
+    attempt = 0
+    decoded = False 
+    decoded_string = array([])
+  
+    while not decoded:
+        print "==================",attempt,"================================"
+        alice_thread.parity_matrix = randomMatrix(len(alice_chunk), number_of_parity_check_eqns, column_weight)
+        alice_thread.syndromes = encode(alice_thread.parity_matrix,alice_chunk,alice_thread.frame_size)
+        
+        #============================SEND PARITY CHECK MATRIX & SYNDROMES =======================================
+        bob_thread.syndromes = alice_thread.syndromes
+        bob_thread.parity_matrix = alice_thread.parity_matrix
+        #========================================================================================================
+    
+        
+        if attempt == 0:
+            transition_matrix = transitionMatrix_data2_python(bob_chunk, alice_chunk ,bob_thread.frame_size)
+            prior_probability_matrix = sequenceProbMatrix(bob_chunk,transition_matrix)
+            
+        belief_propagation_system = SW_LDPC(bob_thread.parity_matrix, bob_thread.syndromes, prior_probability_matrix,decoder=decoder,original=alice_chunk)
+        decoded_string  = belief_propagation_system.decode(iterations=iterations,frozenFor=frozenFor)
+        is_not_decoded = sum(check(bob_thread.parity_matrix, decoded_string, bob_thread.frame_size, bob_thread.syndromes)==False)
+        print "is not decoded",is_not_decoded
+        if is_not_decoded == 0: 
+            decoded = True
+        else:
+            decoded = False
+            
+        attempt += 1
+    print "corrected bob chunk",decoded_string 
+    return decoded_string
+
+def LDPC_decode_all_chunks(alice_thread, bob_thread,fraction_parity_checks,decoder = 'bp-fft',chunk_size = 10, iterations = 10, frozenFor = 5,column_weight = 3):
+    number_of_chunks = len(alice_thread.non_zero_positions)/chunk_size
+    number_of_parity_check_eqns = int(chunk_size * fraction_parity_checks)
+    decoded_string_total = array([],dtype=uint8)
+    print "###",number_of_chunks
+    for i in range(number_of_chunks):
+        print "\t\t",i, "out of ",number_of_chunks
+        start = i*chunk_size
+        end = (i+1)*chunk_size
+        alice_chunk = bob_thread.received_string[start:end]
+        bob_chunk = bob_thread.non_zero_positions[start:end]
+
+        print "#alice",alice_chunk,"#bob",bob_chunk
+        decoded = False
+        attempt = 0
+        decoded_string = array([])
+        
+        decoded_string = LDPC_decode_chunk(alice_thread,bob_thread,number_of_parity_check_eqns,alice_chunk,bob_chunk,attempt,decoder, iterations, frozenFor)
+        
+        decoded_string_total =  append(decoded_string_total, decoded_string)
+#     print "strat",len(alice_thread.non_zero_positions)/chunk_size*chunk_size
+#     last_alice_chunk = bob_thread.received_string[(len(alice_thread.non_zero_positions)/chunk_size-1)*chunk_size:]
+#     last_bob_chunk =   bob_thread.non_zero_positions[(len(alice_thread.non_zero_positions)/chunk_size-1)*chunk_size:]
+#     print last_alice_chunk,last_bob_chunk
+# #     print "#alicelast",last_alice_chunk,"#boblast",last_bob_chunk
+#     LDPC_decode_chunk(alice_thread,bob_thread,number_of_parity_check_eqns,last_alice_chunk,last_bob_chunk,attempt,decoder, iterations, frozenFor)
+#     decoded_string_total =  append(decoded_string_total, decoded_string)
+    
+    alice_thread.non_zero_positions = alice_thread.non_zero_positions[:len(alice_thread.non_zero_positions)/chunk_size*chunk_size]
+    return decoded_string_total
 '''
   The same as above just used in binary error correction (for polarization bases bits)
 '''
@@ -228,7 +292,7 @@ def LDPC_binary_encode(alice_thread,column_weight = 3,row_weight =4):
 #     alice_thread.parity_binary_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
     alice_thread.parity_binary_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, column_weight)
     alice_thread.binary_syndromes=encode(alice_thread.parity_binary_matrix,alice_thread.bases_string,alphabet=2)
-
+    
 
 '''
   Creates transition matrix which is just matrix that combines both Alex and Brad letter probabilities.
@@ -239,7 +303,6 @@ def LDPC_binary_encode(alice_thread,column_weight = 3,row_weight =4):
 '''
 def LDPC_decode(bob_thread,alice_thread,decoder='bp-fft', iterations=70, frozenFor=20):
     bob_thread.sent_string = bob_thread.non_zero_positions[:len(bob_thread.received_string)]
-#     transition_matrix = load("./DarpaQKD/transitionMatrix"+str(bob_thread.frame_size)+".npy")
     transition_matrix = transitionMatrix_data2_python(bob_thread.sent_string,bob_thread.received_string,bob_thread.frame_size)
 #     print "Will be saving TRANSITION matrix"
 #     save("./DarpaQKD/transitionMatrix"+str(bob_thread.frame_size)+".npy",transition_matrix)
@@ -415,10 +478,11 @@ if __name__ == '__main__':
     announce_fraction = 1.0
     announce_binary_fraction = 1.0
     D_block_size = int(coincidence_window_radius/resolution)*2+1
-    data_factor = 100000
+    data_factor = 1000
     optimal_frame_size = 8
     column_weight = 5
     row_weight = 32
+    fraction_parity_checks = 0.6
     
     padding_zeros = 0
     while D_block_size != 0:
@@ -637,16 +701,15 @@ if __name__ == '__main__':
     
     print "MAIN: LDPC: Encoding both NON-BINARY AND BINARY "
     
-    LDPC_encode(alice_thread)
     LDPC_binary_encode(alice_thread)
 
 #=============Sending syndrome values and parity check matrix=====
 
-    print "MAIN: Sending syndrome values and parity check matrix\n"
-    
-    bob_thread.syndromes = alice_thread.syndromes
-    bob_thread.parity_matrix = alice_thread.parity_matrix
-    
+#     print "MAIN: Sending syndrome values and parity check matrix\n"
+#     
+#     bob_thread.syndromes = alice_thread.syndromes
+#     bob_thread.parity_matrix = alice_thread.parity_matrix
+#     
     bob_thread.binary_syndromes = alice_thread.binary_syndromes
     bob_thread.parity_binary_matrix = alice_thread.parity_binary_matrix
     
@@ -656,11 +719,12 @@ if __name__ == '__main__':
     print "MAIN: BINARY DECODING\n"
     bob_thread.bases_string = LDPC_binary_decode(bob_thread, alice_thread)
     print "MAIN: NON-BINARY DECODING\n"
-    print "Alice Key",alice_thread.non_zero_positions
-    print "Bob key",bob_thread.non_zero_positions
-    print "Syndromes", bob_thread.syndromes
-    bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
-
+#     print "Alice Key",alice_thread.non_zero_positions
+#     print "Bob key",bob_thread.non_zero_positions
+#     print "Syndromes", bob_thread.syndromes
+    bob_thread.non_zero_positions= LDPC_decode_all_chunks(alice_thread,bob_thread,fraction_parity_checks=fraction_parity_checks,chunk_size=10, iterations=8)
+#     bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
+    print "#########",len(bob_thread.non_zero_positions),len(alice_thread.non_zero_positions)
     print "MAIN: Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()
     print "MAIN: NON-SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * len(alice_thread.non_zero_positions)) + (len(alice_thread.bases_string)) )/(alice_thread.ttags[-1]*260e-12))/1e6
 
@@ -672,7 +736,7 @@ if __name__ == '__main__':
     
     print "MAIN: Secret key matches with fraction of:", (sum(alice_key == bob_key))/float(len(alice_key))
     
-    eves_bits = int(QBER*len(alice_thread.bases_string)) + len(alice_thread.syndromes)
+    eves_bits = int(QBER*len(alice_thread.bases_string)) + int(len(alice_thread.non_zero_positions)*fraction_parity_checks)
     
     print "MAIN: NON SECRET BITS",len(alice_key), "EVE KNOWS", eves_bits,"BITS"
     print "MAIN: PRIVACY AMPLIFICATION\n"
@@ -688,7 +752,7 @@ if __name__ == '__main__':
 
     print "MAIN: Secret key matches after PA: ", sum(alice_key == bob_key)/float(len(alice_key))
     print "MAIN: SECRET BITS:", len(alice_key)
-    print "MAIN: SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - len(alice_thread.syndromes))) + int(len(alice_thread.bases_string)*(1-QBER)) )/(alice_thread.ttags[-1]*260e-12))/1e6
+    print "MAIN: SECRET-KEY-RATE: MBit/s", (( ((optimal_frame_size-1).bit_length() * (len(alice_thread.non_zero_positions) - int(len(alice_thread.non_zero_positions)*fraction_parity_checks))) + int(len(alice_thread.bases_string)*(1-QBER)) )/(alice_thread.ttags[-1]*260e-12))/1e6
  
     savetxt("./Secret_keys/alice_secret_key1.txt", alice_key,fmt = "%2d")
     savetxt("./Secret_keys/bob_secret_key1.txt", bob_key,fmt = "%2d")
