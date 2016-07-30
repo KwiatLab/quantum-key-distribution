@@ -252,7 +252,7 @@ def LDPC_decode_chunk(alice_thread, bob_thread, number_of_parity_check_eqns,alic
     print "corrected bob chunk",decoded_string 
     return decoded_string
 
-def LDPC_decode_all_chunks(alice_thread, bob_thread,fraction_parity_checks,decoder = 'bp-fft',chunk_size = 10, iterations = 10, frozenFor = 5,column_weight = 3):
+def LDPC_decode_all_chunks(alice_thread, bob_thread,fraction_parity_checks,decoder = 'bp-fft',chunk_size = 10, iterations = 10, frozenFor = 5,column_weight = 4):
     number_of_chunks = len(alice_thread.non_zero_positions)/chunk_size
     number_of_parity_check_eqns = int(chunk_size * fraction_parity_checks)
     decoded_string_total = array([],dtype=uint8)
@@ -722,7 +722,7 @@ if __name__ == '__main__':
 #     print "Alice Key",alice_thread.non_zero_positions
 #     print "Bob key",bob_thread.non_zero_positions
 #     print "Syndromes", bob_thread.syndromes
-    bob_thread.non_zero_positions= LDPC_decode_all_chunks(alice_thread,bob_thread,fraction_parity_checks=fraction_parity_checks,chunk_size=10, iterations=8)
+    bob_thread.non_zero_positions= LDPC_decode_all_chunks(alice_thread,bob_thread,fraction_parity_checks=0.6,chunk_size=10, iterations=5)
 #     bob_thread.non_zero_positions = LDPC_decode(bob_thread,alice_thread)
     print "#########",len(bob_thread.non_zero_positions),len(alice_thread.non_zero_positions)
     print "MAIN: Key length",len(alice_thread.non_zero_positions),"and number of bits", (optimal_frame_size-1).bit_length()

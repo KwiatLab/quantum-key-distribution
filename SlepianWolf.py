@@ -498,10 +498,11 @@ class sw_mathc(sw_math):
         if (any(colsum<=0.0) or any(colsum >= Inf)):
 #             self.err("Column normalization failed! Expect error explosion!")
 #             self.err("Matrix:")
-            self.err(mat)
+#             self.err(mat)
 #             self.err("Column Sums:")
 #             self.err(colsum)
-            raise Exception("Column normalization failed!") #This should NOT happen!
+              print "ERROR IN NORMALIZATION############################################"
+#             raise Exception("Column normalization failed!") #This should NOT happen!
 #             print "Column normalization failed!"
 #             return res
 #             colsum = 1
@@ -1020,7 +1021,6 @@ if (__name__=="__main__"):
         l.decode(iterations=70,frozenFor=5)
         print "decoding done"
 #         /print "RAN:",number_of_parity_check_eqns
-
 
 
 
