@@ -14,14 +14,14 @@ if __name__ == '__main__':
     bob = loadtxt("./DarpaQKD/LDPC_bob_ttags8.txt")
 #  ========== encode ===================
     column_weight = 3
-    row_weight = 6
+    row_weight = 4
     
     frame_size = 8
     
     total_string_length = len(alice)
     print alice
-#     number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
-#     parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
+    number_of_parity_check_eqns_gallager = int(total_string_length*column_weight/row_weight)
+    parity_matrix = gallager_matrix(number_of_parity_check_eqns_gallager, total_string_length, column_weight, row_weight)
 #     parity_matrix = array([[ 1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,],
 #                      [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  0,  0,  0,],
 #                      [ 0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,],
@@ -30,14 +30,14 @@ if __name__ == '__main__':
 #                      [ 0,  0,  0,  1,  0,  1,  0,  0,  1,  1,  0,  0]])
 #     print "Parity matrix\n",parity_matrix
 #     print "column weight of first column",sum(parity_matrix[:,0])
-    number_of_parity_check_eqns_gallager = int(total_string_length*0.6)
-    parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, 3)
+#     number_of_parity_check_eqns_gallager = int(total_string_length*0.6)
+#     parity_matrix = randomMatrix(total_string_length, number_of_parity_check_eqns_gallager, 3)
     syndromes=encode(parity_matrix,alice,alphabet=frame_size)
     print "syndromes: ", syndromes
 #  ======================================
     
 # ============ decode ===================
-    decoder='log-bp-fft'
+    decoder='bp-fft'
     iterations=70
     frozenFor=5
     

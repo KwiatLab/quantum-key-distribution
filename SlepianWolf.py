@@ -402,8 +402,8 @@ class sw_math(object):
     #The parity check's calculational code is:
     #roll(flipud(ifftcol(mulcol(fftcol(matrix of bit probabilities)))),1+syndrome value,0)
     
-    def parityProbabilities_mul(self,mat,syndromes):
             
+    def parityProbabilities_mul(self,mat,syndromes):
         #To do the convolutions, in order to find the probabilities given all the bits, we use
         #an FFT, which allows it to be done faster for all the bits at once
         convresult = self.ifftcol(self.mulcol(self.fftcol(mat)))
@@ -436,7 +436,7 @@ class sw_math(object):
     
     
     def parityProbabilities(self,mat,syndromes):
-
+#         print "This is parity probabilities coming from different parities",mat
         return self.parityProbabilities_mul(mat,syndromes)
     
     #BITPROBABILITIES
@@ -451,6 +451,7 @@ class sw_math(object):
         #Does nultiplication of each given all the others, and multiplies in the initial value
 #         print "Dimensions:\n",self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
 #         print "Compare",input_matrix, self.mulcol(input_matrix)
+#         print "This is input matrix",input_matrix
         return self.mulcol(input_matrix)*probability_matrix.reshape((len(probability_matrix),1))
     
     #BITVALUE
@@ -458,7 +459,11 @@ class sw_math(object):
     #and the probabilities given the child nodes. This is a hard decision, meaning that it has no
     #probabilities associated with it.
     def bitValue(self,mat,prev):
-        return (self.mulallcol(mat)*prev).argmax()
+#         print "WILL BE GUEEEESING",mat
+#   Used to be         return (self.mulallcol(mat)*prev).argmax()
+#   but sometimes values does not converge due to multiplication by prior probability vector.
+  
+        return (self.mulallcol(mat)).argmax()
     
     
     #LOGBITPROBABILITIES
@@ -610,47 +615,7 @@ class swnb_node(sw_mathc):
         for i in xrange(len(self.connections)):
             self.connections[i].receive(self,mat[:,i])
             
-class sw_node(sw_mathc):
-    
-    def __init__(self):
-        #Array of the log-likelihood ratios or P1s of the input, depending on implementation
-        self.inputs = None
-        #The connections that the given node has
-        self.connections = []
-        
-    #Appends the given connection
-    def addConnection(self,conn):
-        self.connections.append(conn)
-        
-    #Prepare the object for actual propagation. This needs to be called before running belief propagation,
-    #and after connecting all of the nodes together into the graph structure
-    def prepare(self,alphabet):
-        if (len(self.connections)==0):
-            self.err("Warning: Node not connected!")
-        #elif (len(self.connections)<2):
-        #    print "Warning: Node has one !"
-        self.inputs = ones(len(self.connections))
-    
-    #Recieve recieves the conditional probability of the given node according to the object
-    def receive(self,obj,prob):
-        self.inputs[self.connections.index(obj)]=prob
-#         print "receive",self.connections.index(obj),prob
-    def runAlgorithm(self):
-        #TODO: Need the correct way to do logs, and to avoid infnities that were very annoying!
-#         print "here????"
-        return self.bitProbabilities(self.inputs,ones(self.inputs.shape[0]))
 
-    
-    def propagate(self):
-        #Find the values to propagate
-#         print "Will actually do propagation in super class"
-        print "About to propagate!!!"
-        vals = self.runAlgorithm()
-        
-        #Propagate the values to each of the associated connections
-        for i in xrange(len(self.connections)):
-            self.connections[i].receive(self,vals[i])
-        
 ############################################################################################
 #Create the default bit and parity check nodes for the binary and nonbinary decoder
 
@@ -715,83 +680,13 @@ class SW_nblogCheck(swnb_node):
     def runAlgorithm(self):
         return self.parityProbabilities_log(self.inputMatrix,self.syndromeValue)
 
-#A debugging decoder. Used to print out values to check if everything is fine
-class SW_nbBit_dbg(swnb_node):
-    def __init__(self,priorProbability):
-        super(SW_nbBit_dbg,self).__init__()
-        self.priorProbability = priorProbability
-        self.err("PriorProbability:")
-        self.err(priorProbability)
-        self.before = None
-    def runAlgorithm(self):
-        self.err("RUNALG_BIT:")
-        self.err("Input:")
-        self.err(self.inputMatrix)
-        self.err("OldInput:")
-        self.err(self.before)
-        self.err("PriorProb:")
-        self.err(self.priorProbability)
-        self.before = self.inputMatrix
-        a = self.bitProbabilities(self.inputMatrix,self.priorProbability)
-        self.err("BitProbabilities:")
-        self.err(a)
-        a=self.normalizecol(a)
-        self.err("Normalized:")
-        self.err(a)
-        return a
-    def getValue(self):
-        return self.bitValue(self.inputMatrix,self.priorProbability)
-
-class SW_nbCheck_dbg(swnb_node):
-    def __init__(self,syndrome):
-        super(SW_nbCheck_dbg,self).__init__()
-        self.syndromeValue = syndrome
-    def runAlgorithm(self):
-        self.err("RUNALG_CHECK:")
-        self.err("Input:")
-        self.err(self.inputMatrix)
-        self.err("Syndrome:"+str(self.syndromeValue))
-        a=self.parityProbabilities(self.inputMatrix,self.syndromeValue)
-        self.err("ParityProbabilites:")
-        self.err(a)
-        return a
-
-
-#The 'bp' standard binary decoder is made up of the next two classes
-class SW_Bit(sw_node):
-    def __init__(self,priorProbability):
-        super(SW_Bit,self).__init__()
-        self.priorProbability = priorProbability
-    def runAlgorithm(self):
-        return None
-#         arg = self.bitProbabilities(self.inputs,self.priorProbability)
-#         print "\n\t Normalization Argument:\n",arg
-#         return_value = self.normalizecol(arg)
-# #         print"\n\t After (Normalized) Argument\n",return_value 
-# 
-#         return return_value
-    def getValue(self):
-        return 0
-        
-        
-        
-class SW_Check(sw_node):
-    def __init__(self,syndrome):
-        super(SW_Check,self).__init__()
-        self.syndromeValue = syndrome
-    def runAlgorithm(self):
-        return self.parityProbabilities(self.inputMatrix,self.syndromeValue)
-############################################################################################
-# The following class actually sets the algorithm up and does the slepian-wolf 
-# decoding
 
 class SW_LDPC(object):
     
     #The available decoder types
     decoders = {
         "bp-fft": (SW_nbBit,SW_nbCheck),
-        "log-bp-fft": (SW_nblogBit,SW_nblogCheck),
-        "bp": (SW_Bit,SW_Check)
+        "log-bp-fft": (SW_nblogBit,SW_nblogCheck)
     }
     
     def __init__(self,parityMatrix, syndromes, data_probability_matrix, decoder=None, original=None,verbose=True):
