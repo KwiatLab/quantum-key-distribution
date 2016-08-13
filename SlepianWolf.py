@@ -463,7 +463,7 @@ class sw_math(object):
 #   Used to be         return (self.mulallcol(mat)*prev).argmax()
 #   but sometimes values does not converge due to multiplication by prior probability vector.
   
-        return (self.mulallcol(mat)).argmax()
+        return (self.mulallcol(mat)*prev).argmax()
     
     
     #LOGBITPROBABILITIES

@@ -186,7 +186,7 @@ def readMatrix(fname):
 #  this is how many parities does eahc bit have (column weight)
 def randomMatrix(bits,checks,parities=3):
     #The matrix is created using its transpose to add parity checks to each bit
-    parity_check_matrix = lil_matrix((bits,checks),dtype = uint16)
+    parity_check_matrix = zeros((bits,checks),dtype = uint16)
 #     print parity_check_matrix
     for bit_value in xrange(parity_check_matrix.shape[0]):
         j=0
